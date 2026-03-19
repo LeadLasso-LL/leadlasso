@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeadLasso — Start Turning Missed Calls Into New Customers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #E13C3C 0%, #DB7676 100%);
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: #fff;
+      padding: 3rem 1.5rem 4rem;
+      -webkit-font-smoothing: antialiased;
+    }
+    body:has(#result.result-layout-success) {
+      height: 100vh;
+      max-height: 100vh;
+      min-height: 100vh;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    body:has(#result.result-layout-success) .page {
+      max-width: none;
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    .page {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    .headline-section {
+      text-align: center;
+      margin: 0 0 2.5rem;
+    }
+    .headline {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 2rem;
+      line-height: 1.2;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .subheadline {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 0.9375rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.78);
+      margin: 0;
+      line-height: 1.4;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 2.25rem 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .field {
+      margin-bottom: 1.75rem;
+    }
+    .field:last-of-type {
+      margin-bottom: 0;
+    }
+    .field-label {
+      display: block;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      margin-bottom: 0.375rem;
+      color: #fff;
+    }
+    .field-helper {
+      font-size: 0.8125rem;
+      color: rgba(255, 255, 255, 0.75);
+      margin-top: 0.375rem;
+      line-height: 1.4;
+    }
+    .field-helper + .field-helper {
+      margin-top: 0.25rem;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.18);
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .radio-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      cursor: pointer;
+    }
+    .radio-option input {
+      width: 18px;
+      height: 18px;
+      margin: 0.15rem 0 0;
+      accent-color: #fff;
+      cursor: pointer;
+    }
+    .radio-option span {
+      font-size: 0.9375rem;
+      color: #fff;
+    }
+    .radio-option.recommended span {
+      font-weight: 600;
+    }
+    .radio-option .option-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .radio-option .option-subtext,
+    .radio-option .option-helper {
+      font-size: 0.8125rem;
+      color: rgba(255, 255, 255, 0.78);
+      margin: 0.25rem 0 0;
+      line-height: 1.4;
+    }
+    .radio-option .option-helper {
+      margin-top: 0.5rem;
+    }
+    #forward_setup_helper_wrap[hidden] {
+      display: none;
+    }
+    #forward_setup_helper_wrap:not([hidden]) {
+      display: block;
+      margin-top: 0.5rem;
+    }
+    .default-message-preview {
+      font-size: 0.8125rem;
+      color: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.875rem 1rem;
+      margin-top: 0.5rem;
+      line-height: 1.5;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .submit-wrap {
+      margin-top: 2.25rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: #E13C3C;
+      background: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.05s;
+    }
+    .submit-btn:hover {
+      opacity: 0.95;
+    }
+    .submit-btn:active {
+      transform: scale(0.99);
+    }
+    .submit-helper {
+      text-align: center;
+      font-size: 0.8125rem;
+      color: rgba(255, 255, 255, 0.72);
+      margin: 1rem auto 0;
+      line-height: 1.45;
+      max-width: 22em;
+    }
+    #ring_number_wrap {
+      overflow: hidden;
+      transition: opacity 0.2s ease;
+    }
+    #ring_number_wrap[hidden] {
+      display: none;
+    }
+    #custom_message_wrap {
+      overflow: hidden;
+      transition: opacity 0.2s ease;
+    }
+    #custom_message_wrap[hidden] {
+      display: none;
+    }
+    #result {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      font-size: 1rem;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 50vh;
+    }
+    #result.result-layout-success {
+      flex: 1 1 auto;
+      align-self: stretch;
+      min-height: 0;
+      height: 100%;
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      padding-top: max(env(safe-area-inset-top, 0px), clamp(1rem, 5.5vh, 3.75rem));
+      padding-bottom: max(env(safe-area-inset-bottom, 0px), clamp(0.75rem, 2.5vh, 1.5rem));
+      padding-left: 0;
+      padding-right: 0;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      overflow: hidden;
+    }
+    #result.result-layout-success .result-success-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      align-self: center;
+      justify-content: center;
+      text-align: center;
+      width: min(100%, 36rem);
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      min-width: 0;
+      flex: 0 1 auto;
+      max-height: 100%;
+      padding-left: max(1rem, env(safe-area-inset-left, 0px));
+      padding-right: max(1rem, env(safe-area-inset-right, 0px));
+      padding-top: 0;
+      padding-bottom: 0;
+      box-sizing: border-box;
+      gap: 0;
+      overflow: hidden;
+    }
+    #result.result-layout-success .result-success-top,
+    #result.result-layout-success .result-success-mid,
+    #result.result-layout-success .result-success-bottom {
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    #result.result-layout-success .result-success-top {
+      gap: clamp(1.125rem, 2.75vh, 2rem);
+      margin-bottom: clamp(1.5rem, 4.25vh, 3rem);
+    }
+    #result.result-layout-success .result-success-mid {
+      flex: 0 0 auto;
+      padding: 0;
+      min-height: unset;
+      gap: clamp(1.125rem, 2.75vh, 2rem);
+      margin-bottom: clamp(1.75rem, 5.25vh, 3.75rem);
+    }
+    #result.result-layout-success .result-number-wrap {
+      container-type: inline-size;
+      container-name: result-num;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    #result .result-headline {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 2.125rem;
+      margin: 0 0 0.875rem;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    #result.result-layout-success .result-headline {
+      font-size: clamp(2.5rem, 10vw, 4.35rem);
+      margin: 0;
+      line-height: 1.12;
+      width: 100%;
+    }
+    #result .result-subheadline {
+      font-size: 1.125rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.88);
+      margin: 0 0 2.5rem;
+      max-width: 26em;
+      line-height: 1.45;
+    }
+    #result.result-layout-success .result-subheadline {
+      font-size: clamp(1.0625rem, 3.05vw, 1.5rem);
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+      margin: 0;
+      max-width: 28em;
+      line-height: 1.48;
+      width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    #result .result-number-label {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.95);
+      margin: 0 0 0.75rem;
+    }
+    #result.result-layout-success .result-number-label {
+      font-size: clamp(1.125rem, 3.2vw, 1.45rem);
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: 0.02em;
+      line-height: 1.4;
+      width: 100%;
+    }
+    #result .result-number {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-weight: 700;
+      font-size: 2.875rem;
+      letter-spacing: 0.035em;
+      margin: 0.25rem 0 2.5rem;
+      color: #fff;
+      line-height: 1.15;
+    }
+    #result.result-layout-success .result-number {
+      font-size: clamp(1.4rem, 6.4vw, 5.5rem);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      margin: 0;
+      line-height: 1.12;
+      text-align: center;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    @supports (width: 1cqw) {
+      #result.result-layout-success .result-number {
+        font-size: clamp(1.4rem, min(5.5rem, calc(100cqw / 8.05)), 5.5rem);
+      }
+    }
+    #result .result-footer {
+      font-size: 1rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.82);
+      margin: 0;
+      line-height: 1.5;
+      max-width: 22em;
+    }
+    #result.result-layout-success .result-footer {
+      font-size: clamp(1.0625rem, 2.35vw, 1.1875rem);
+      margin: 0;
+      padding: 0;
+      max-width: 26em;
+      line-height: 1.58;
+      color: rgba(255, 255, 255, 0.86);
+      width: 100%;
+    }
+    @media (max-height: 640px) {
+      #result.result-layout-success {
+        padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+        padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+      }
+      #result.result-layout-success .result-success-top {
+        gap: clamp(0.625rem, 1.75vh, 1.125rem);
+        margin-bottom: clamp(0.875rem, 2.5vh, 1.5rem);
+      }
+      #result.result-layout-success .result-success-mid {
+        gap: clamp(0.625rem, 1.75vh, 1.125rem);
+        margin-bottom: clamp(1rem, 3vh, 2rem);
+      }
+      #result.result-layout-success .result-headline {
+        font-size: clamp(2rem, 9vw, 3.25rem);
+        line-height: 1.1;
+      }
+      #result.result-layout-success .result-subheadline {
+        font-size: clamp(0.9375rem, 2.8vw, 1.2rem);
+        line-height: 1.4;
+      }
+      #result.result-layout-success .result-number {
+        font-size: clamp(1.25rem, 5.5vw, 4rem);
+      }
+      @supports (width: 1cqw) {
+        #result.result-layout-success .result-number {
+          font-size: clamp(1.25rem, min(4rem, calc(100cqw / 8.05)), 4rem);
+        }
+      }
+    }
+    .error-msg {
+      color: rgba(255, 255, 255, 0.95);
+      background: rgba(0, 0, 0, 0.2);
+      padding: 1rem;
+      border-radius: 10px;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="headline-section">
+      <h1 class="headline">Start Turning Missed Calls Into New Customers</h1>
+      <p class="subheadline">Tell us how LeadLasso should look for your business below</p>
+    </div>
+
+    <div class="card">
+      <form id="onboarding-form">
+        <div class="field">
+          <label class="field-label" for="business_name">Business Name</label>
+          <input type="text" id="business_name" name="business_name" required placeholder="Your business name">
+          <p class="field-helper">What your business is called in LeadLasso texts to leads</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="first_name">First Name</label>
+          <input type="text" id="first_name" name="first_name" required placeholder="Your first name">
+          <p class="field-helper">The first name that is used in LeadLasso texts to leads</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="email">Email</label>
+          <input type="email" id="email" name="email" required placeholder="you@example.com">
+          <p class="field-helper">Where we'll send your account details</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="personal_phone">Personal Phone</label>
+          <input type="tel" id="personal_phone" name="personal_phone" required placeholder="+1 (555) 000-0000">
+          <p class="field-helper">The number that we'll route messages to when a lead responds</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="preferred_area_code">Choose Your LeadLasso Area Code</label>
+          <input type="text" id="preferred_area_code" name="preferred_area_code" placeholder="e.g. 555" maxlength="3" pattern="[0-9]{3}" required>
+          <p class="field-helper">The area code that we'll give your LeadLasso phone number</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Setup Type</label>
+          <div class="radio-group">
+            <label class="radio-option recommended">
+              <input type="radio" name="setup_type" value="replace_number" checked required>
+              <div class="option-content">
+                <span>Use LeadLasso as Your Business Number (Recommended)</span>
+                <p class="option-subtext">No setup required. Captures all missed call leads automatically.</p>
+              </div>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="setup_type" value="forward">
+              <div class="option-content">
+                <span>Set Up Call Forwarding</span>
+                <p class="option-subtext">Requires setting up conditional call forwarding (no-answer forwarding). Captures most missed call leads. For businesses that are unable to replace their current number.</p>
+                <div id="forward_setup_helper_wrap" hidden>
+                  <p class="option-helper">You'll need to set up conditional call forwarding so missed calls route to your LeadLasso number. We recommend using a dedicated business phone number. Using a personal number may result in unintended text messages being sent.</p>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="field" id="ring_number_wrap">
+          <label class="field-label" for="forward_to_phone">Calls Should Ring This Number</label>
+          <input type="tel" id="forward_to_phone" name="forward_to_phone" placeholder="+1 (555) 000-0000">
+          <p class="field-helper">Customers will call your public-facing LeadLasso number, and we'll instantly forward all calls to this number so you can answer. This number is likely a business phone number rather than a personal cell phone.</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Auto-Reply Message</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="auto_reply_mode" value="default" checked>
+              <span>Use LeadLasso Default Message</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="auto_reply_mode" value="custom">
+              <span>Create Custom Message</span>
+            </label>
+          </div>
+          <p class="field-helper">Use LeadLasso's default text message, or create your own custom message.</p>
+          <div id="default_message_preview" class="default-message-preview">
+            Sorry we missed your call. This is <strong id="preview_first_name">[first name]</strong> from <strong id="preview_business_name">[business name]</strong>. How can we help?
+          </div>
+        </div>
+
+        <div class="field" id="custom_message_wrap" hidden>
+          <label class="field-label" for="auto_reply_template">Custom Auto-Reply Message</label>
+          <textarea id="auto_reply_template" name="auto_reply_template" rows="4" placeholder="Your custom message to missed call leads…"></textarea>
+          <p class="field-helper">We'll send this exact message to your missed call leads. Tip: include a booking link!</p>
+        </div>
+
+        <div class="submit-wrap">
+          <button type="submit" class="submit-btn">Continue to Payment</button>
+          <p class="submit-helper">You're one step away from protecting your business from lost revenue</p>
+        </div>
+      </form>
+    </div>
+
+    <div id="result" style="display: none;"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('onboarding-form');
+    const resultDiv = document.getElementById('result');
+    const headlineSection = document.querySelector('.headline-section');
+    const ringNumberWrap = document.getElementById('ring_number_wrap');
+    const customMessageWrap = document.getElementById('custom_message_wrap');
+    const defaultMessagePreview = document.getElementById('default_message_preview');
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function toggleRingNumber() {
+      const replace = document.querySelector('input[name="setup_type"]:checked')?.value === 'replace_number';
+      ringNumberWrap.hidden = !replace;
+      if (replace) document.getElementById('forward_to_phone').setAttribute('required', 'required');
+      else document.getElementById('forward_to_phone').removeAttribute('required');
+      var forwardHelper = document.getElementById('forward_setup_helper_wrap');
+      if (forwardHelper) forwardHelper.hidden = replace;
+    }
+
+    function toggleCustomMessage() {
+      const custom = document.querySelector('input[name="auto_reply_mode"]:checked')?.value === 'custom';
+      customMessageWrap.hidden = !custom;
+      defaultMessagePreview.style.display = custom ? 'none' : 'block';
+    }
+
+    function updateDefaultPreview() {
+      const first = document.getElementById('first_name').value.trim() || '[first name]';
+      const business = document.getElementById('business_name').value.trim() || '[business name]';
+      document.getElementById('preview_first_name').textContent = first;
+      document.getElementById('preview_business_name').textContent = business;
+    }
+    document.getElementById('first_name').addEventListener('input', updateDefaultPreview);
+    document.getElementById('business_name').addEventListener('input', updateDefaultPreview);
+
+    document.querySelectorAll('input[name="setup_type"]').forEach(function (r) {
+      r.addEventListener('change', toggleRingNumber);
+    });
+    document.querySelectorAll('input[name="auto_reply_mode"]').forEach(function (r) {
+      r.addEventListener('change', toggleCustomMessage);
+    });
+    toggleRingNumber();
+    toggleCustomMessage();
+
+    async function fetchSuccessNumber(sessionId) {
+      const res = await fetch('/onboarding/success?session_id=' + encodeURIComponent(sessionId));
+      const data = await res.json();
+      if (res.ok && data.success && data.leadlasso_number) {
+        return data.leadlasso_number;
+      }
+      return null;
+    }
+
+    function buildSuccessHTML(leadlassoNumber) {
+      return '<div class="result-success-stack">' +
+        '<div class="result-success-top">' +
+        '<p class="result-headline">You\'re all set.</p>' +
+        '<p class="result-subheadline">LeadLasso is ready to protect your business from lost revenue.</p>' +
+        '</div>' +
+        '<div class="result-success-mid">' +
+        '<p class="result-number-label">Your LeadLasso Number:</p>' +
+        '<div class="result-number-wrap"><p class="result-number">' + (leadlassoNumber || '') + '</p></div>' +
+        '</div>' +
+        '<div class="result-success-bottom">' +
+        '<p class="result-footer">Check your email for your account and setup details.</p>' +
+        '</div>' +
+        '</div>';
+    }
+
+    function showSuccessPage(leadlassoNumber) {
+      if (headlineSection) headlineSection.style.display = 'none';
+      form.closest('.card').style.display = 'none';
+      resultDiv.classList.add('result-layout-success');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = buildSuccessHTML(leadlassoNumber);
+    }
+
+    (function checkSuccessRedirect() {
+      if (getQueryParam('preview_success') === '1') {
+        if (headlineSection) headlineSection.style.display = 'none';
+        form.closest('.card').style.display = 'none';
+        resultDiv.classList.add('result-layout-success');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = buildSuccessHTML('+18135551234');
+        return;
+      }
+      const success = getQueryParam('success');
+      const sessionId = getQueryParam('session_id');
+      if (success !== '1' || !sessionId) return;
+
+      if (headlineSection) headlineSection.style.display = 'none';
+      form.closest('.card').style.display = 'none';
+      resultDiv.classList.remove('result-layout-success');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<p class="result-headline">Setting up your number…</p><p class="field-helper">This usually takes a few seconds.</p>';
+
+      var attempts = 0;
+      var maxAttempts = 30;
+      function poll() {
+        fetchSuccessNumber(sessionId).then(function (number) {
+          if (number) {
+            showSuccessPage(number);
+            return;
+          }
+          attempts += 1;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 2000);
+          } else {
+            resultDiv.innerHTML = '<p class="result-headline">Almost there</p><p class="field-helper">Your number is being set up. Please check back in a moment or refresh the page.</p>';
+          }
+        }).catch(function () {
+          attempts += 1;
+          if (attempts < maxAttempts) setTimeout(poll, 2000);
+          else resultDiv.innerHTML = '<p class="result-headline">Something went wrong</p><p class="field-helper">Please try again later.</p>';
+        });
+      }
+      poll();
+    })();
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const setupType = document.querySelector('input[name="setup_type"]:checked')?.value;
+      const personalPhone = document.getElementById('personal_phone').value.trim();
+      const ringNumber = document.getElementById('forward_to_phone').value.trim();
+      const useDefaultMessage = document.querySelector('input[name="auto_reply_mode"]:checked')?.value === 'default';
+
+      const isReplace = setupType === 'replace_number';
+      const owner_phone = (isReplace && ringNumber) ? ringNumber : personalPhone;
+      const forward_to_phone = (isReplace && ringNumber) ? ringNumber : (setupType === 'forward' ? null : personalPhone);
+
+      const body = {
+        business_name: document.getElementById('business_name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        sender_name: document.getElementById('first_name').value.trim(),
+        owner_phone: owner_phone,
+        forward_to_phone: forward_to_phone,
+        preferred_area_code: document.getElementById('preferred_area_code').value.trim().replace(/\D/g, '').slice(0, 3),
+        setup_type: setupType,
+        auto_reply_template: useDefaultMessage ? null : (document.getElementById('auto_reply_template').value.trim() || null)
+      };
+
+      try {
+        const res = await fetch('/onboarding/business', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.checkout_url) {
+          window.location.href = data.checkout_url;
+          return;
+        }
+        if (res.ok && data.success) {
+          if (headlineSection) headlineSection.style.display = 'none';
+          form.closest('.card').style.display = 'none';
+          resultDiv.classList.add('result-layout-success');
+          resultDiv.style.display = 'block';
+          resultDiv.innerHTML = buildSuccessHTML(data.leadlasso_number || '');
+        } else {
+          resultDiv.classList.remove('result-layout-success');
+          resultDiv.style.display = 'block';
+          resultDiv.innerHTML = '<p class="result-headline">Error</p><p class="error-msg">' + (data.error || res.statusText) + '</p>';
+        }
+      } catch (err) {
+        resultDiv.classList.remove('result-layout-success');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<p class="result-headline">Error</p><p class="error-msg">' + (err.message || 'Request failed') + '</p>';
+      }
+    });
+  </script>
+</body>
+</html>
