@@ -548,6 +548,7 @@
   </div>
 
   <script>
+    const BACKEND_BASE = 'https://leadlasso.onrender.com';
     const form = document.getElementById('onboarding-form');
     const resultDiv = document.getElementById('result');
     const headlineSection = document.querySelector('.headline-section');
@@ -558,6 +559,11 @@
     function getQueryParam(name) {
       const params = new URLSearchParams(window.location.search);
       return params.get(name);
+    }
+    function escapeHtml(s) {
+      var div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
     }
 
     function toggleRingNumber() {
@@ -594,8 +600,8 @@
     toggleCustomMessage();
 
     async function fetchSuccessNumber(sessionId) {
-      const res = await fetch('/onboarding/success?session_id=' + encodeURIComponent(sessionId));
-      const data = await res.json();
+      const res = await fetch(BACKEND_BASE + '/onboarding/success?session_id=' + encodeURIComponent(sessionId));
+      const data = await res.json().catch(function () { return {}; });
       if (res.ok && data.success && data.leadlasso_number) {
         return data.leadlasso_number;
       }
@@ -691,12 +697,12 @@
       };
 
       try {
-        const res = await fetch('/onboarding/business', {
+        const res = await fetch(BACKEND_BASE + '/onboarding/business', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
-        const data = await res.json();
+        const data = await res.json().catch(function () { return {}; });
         if (res.ok && data.success && data.checkout_url) {
           window.location.href = data.checkout_url;
           return;
@@ -710,12 +716,13 @@
         } else {
           resultDiv.classList.remove('result-layout-success');
           resultDiv.style.display = 'block';
-          resultDiv.innerHTML = '<p class="result-headline">Error</p><p class="error-msg">' + (data.error || res.statusText) + '</p>';
+          var errMsg = (data && data.error) ? data.error : (res.statusText || 'Something went wrong');
+          resultDiv.innerHTML = '<p class="result-headline">Error</p><p class="error-msg">' + escapeHtml(errMsg) + '</p>';
         }
       } catch (err) {
         resultDiv.classList.remove('result-layout-success');
         resultDiv.style.display = 'block';
-        resultDiv.innerHTML = '<p class="result-headline">Error</p><p class="error-msg">' + (err.message || 'Request failed') + '</p>';
+        resultDiv.innerHTML = '<p class="result-headline">Error</p><p class="error-msg">' + escapeHtml(err.message || 'Request failed. Please check your connection.') + '</p>';
       }
     });
   </script>
