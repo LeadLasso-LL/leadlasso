@@ -25,7 +25,7 @@ import {
   prepareConversationForMissedCall,
   getConversationCodeForBusinessCustomer,
 } from '../services/conversation';
-import { sendSms } from '../services/sms';
+import { sendCustomerSms, sendSms } from '../services/sms';
 
 /** Empty TwiML — we do not reject or modify the call; status callback handles missed-call SMS. */
 const EMPTY_TWIML =
@@ -135,7 +135,7 @@ async function handleIncomingCallStatus(req: Request, res: Response): Promise<vo
       console.error('[call] prepareConversationForMissedCall failed', err);
     }
 
-    await sendSms({
+    await sendCustomerSms({
       from: business.leadlasso_number,
       to: from,
       body: replyText,

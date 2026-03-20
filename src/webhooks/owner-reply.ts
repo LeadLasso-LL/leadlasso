@@ -16,7 +16,7 @@ import {
   getConversationByOwnerAndCode,
   updateConversationTimestamps,
 } from '../services/conversation';
-import { sendSms } from '../services/sms';
+import { sendCustomerSms, sendSms } from '../services/sms';
 
 export async function handleOwnerReply(req: Request, res: Response): Promise<void> {
   try {
@@ -53,7 +53,7 @@ export async function handleOwnerReply(req: Request, res: Response): Promise<voi
     }
 
     await updateConversationTimestamps(conversation.id);
-    await sendSms({
+    await sendCustomerSms({
       from: business.leadlasso_number,
       to: conversation.customer_phone,
       body: bodyWithoutCode,

@@ -52,3 +52,9 @@ export interface ConversationRow {
   created_at: string;
   updated_at: string;
 }
+
+export interface OutboundCustomerSmsRow {
+  id: string;
+  customer_phone: string;
+  created_at: string;
+}

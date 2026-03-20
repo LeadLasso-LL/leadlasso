@@ -21,7 +21,7 @@ import {
   updateConversationTimestamps,
   clearRequiresOwnerReplyIntro,
 } from '../services/conversation';
-import { sendSms } from '../services/sms';
+import { sendCustomerSms, sendSms } from '../services/sms';
 
 function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
@@ -76,7 +76,7 @@ export async function handleIncomingSms(req: Request, res: Response): Promise<vo
         return;
       }
       await updateConversationTimestamps(conversation.id);
-      await sendSms({
+      await sendCustomerSms({
         from: business.leadlasso_number!,
         to: conversation.customer_phone,
         body: bodyWithoutCode,
