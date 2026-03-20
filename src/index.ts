@@ -12,7 +12,7 @@ import { handleOnboardingBusiness, handleOnboardingSuccess } from './routes/onbo
 import { handleStripeWebhook } from './webhooks/stripe';
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 // Stripe webhook must get raw body for signature verification (register before body parsers)
 app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
@@ -38,6 +38,6 @@ app.post('/webhooks/owner-reply', handleOwnerReply);
 app.post('/onboarding/business', handleOnboardingBusiness);
 app.get('/onboarding/success', handleOnboardingSuccess);
 
-app.listen(port, () => {
-  console.log(`LeadLasso backend listening on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
