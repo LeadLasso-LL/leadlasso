@@ -8,8 +8,10 @@ import Stripe from 'stripe';
 import { supabase } from '../lib/supabase';
 import type { SetupType } from '../lib/supabase';
 import { normalizePhone } from '../lib/phone';
-import { getPublicBaseUrl } from '../lib/twilio';
 import { provisionLocalNumber, releaseNumber } from '../services/twilio-provisioning';
+
+/** Where users land after Stripe Checkout (must match hosted onboarding page). Not PUBLIC_BASE_URL (webhooks/TwiML). */
+const ONBOARDING_PAGE_ORIGIN = 'https://start.getleadlasso.io';
 
 const REQUIRED = ['business_name', 'email', 'owner_phone', 'setup_type', 'preferred_area_code'] as const;
 
@@ -153,14 +155,13 @@ export async function handleOnboardingBusiness(req: Request, res: Response): Pro
     }
 
     const stripe = new Stripe(secretKey);
-    const baseUrl = getPublicBaseUrl();
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer_email: String(body.email).trim(),
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}/onboarding.html?success=1&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/onboarding.html?canceled=1`,
+      success_url: `${ONBOARDING_PAGE_ORIGIN}/onboarding.html?success=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${ONBOARDING_PAGE_ORIGIN}/onboarding.html?canceled=1`,
       metadata: {
         business_name: String(body.business_name).trim(),
         sender_name: body.sender_name != null ? String(body.sender_name).trim() : '',
