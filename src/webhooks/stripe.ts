@@ -103,10 +103,17 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     setupTypeRaw === 'forward' || setupTypeRaw === 'forwarding' ? 'forwarding' : 'replace_number';
   try {
     await sendWelcomeEmail({
-      firstName: onboardingData.sender_name?.trim() || 'there',
-      email: onboardingData.email as string,
+      email: String(onboardingData.email),
       leadlassoNumber: result.leadlasso_number,
       setupType,
+      businessName: String(onboardingData.business_name),
+      senderName: onboardingData.sender_name?.trim() || null,
+      ownerPhone: String(onboardingData.owner_phone),
+      forwardToPhone:
+        onboardingData.forward_to_phone != null && String(onboardingData.forward_to_phone).trim() !== ''
+          ? String(onboardingData.forward_to_phone).trim()
+          : null,
+      autoReplyTemplate: onboardingData.auto_reply_template ?? null,
     });
   } catch (err) {
     console.error('[stripe] Welcome email failed', err);

@@ -1,135 +1,106 @@
 /**
  * Transactional email via Resend.
- * Welcome email sent after successful paid onboarding.
+ * Welcome email sent after successful paid onboarding (Stripe webhook).
  */
+import { readFile } from 'fs/promises';
+import path from 'path';
 import { Resend } from 'resend';
 
 export type WelcomeEmailSetupType = 'replace_number' | 'forwarding';
 
 export type SendWelcomeEmailParams = {
-  firstName: string;
   email: string;
   leadlassoNumber: string;
   setupType: WelcomeEmailSetupType;
+  businessName: string;
+  senderName: string | null;
+  ownerPhone: string;
+  forwardToPhone: string | null;
+  /** null / empty = use default auto-reply sentence in HTML */
+  autoReplyTemplate: string | null;
 };
 
-function buildReplaceNumberBody(firstName: string, leadlassoNumber: string): string {
-  return `Hi ${firstName},
+const WELCOME_SUBJECT = "You're live - Your LeadLasso number is ready";
 
-You're all set.
-
-Your LeadLasso number:
-${leadlassoNumber}
-
----
-
-Next step:
-
-Use this as your business number anywhere customers call you.
-
-Examples:
-Google Business Profile
-Your website
-Facebook page
-Online ads
-
----
-
-How it works:
-
-1. A customer calls your LeadLasso number
-2. We instantly forward the call to your business phone
-3. If you miss the call, LeadLasso automatically texts the customer
-4. They can reply and you can close the job
-
----
-
-Example message you'll receive:
-
-New missed call lead A7F2
-From: +14135551234
-
-Hi, I was calling about plumbing work.
-
-Reply with:
-A7F2 Yes we can help. What seems to be the issue?
-
-LeadLasso removes the code before sending your reply to the customer.
-
-The code simply makes sure your message goes to the right lead, especially when multiple customers are texting you at the same time.
-
----
-
-Tip:
-The faster you reply, the more likely you are to win the job.
-
-You're live.`;
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-function buildForwardBody(firstName: string, leadlassoNumber: string): string {
-  const leadlassoNumberDigitsOnly = leadlassoNumber.replace(/\D/g, '');
-  return `Hi ${firstName},
+function defaultAutoReplyText(senderName: string, businessName: string): string {
+  return `Sorry we missed your call. This is ${senderName} from ${businessName}. How can we help?`;
+}
 
-You're almost live.
+/** Value injected into {{auto_reply_template}}: custom (escaped) or default sentence (escaped). */
+function buildAutoReplyHtmlFragment(params: SendWelcomeEmailParams): string {
+  const sender = (params.senderName || 'us').trim() || 'us';
+  const business = (params.businessName || 'us').trim() || 'us';
+  const custom = params.autoReplyTemplate?.trim();
+  if (custom) return escapeHtml(custom);
+  return escapeHtml(defaultAutoReplyText(sender, business));
+}
 
-Your LeadLasso number:
-${leadlassoNumber}
+async function loadWelcomeHtmlTemplate(setupType: WelcomeEmailSetupType): Promise<string> {
+  const fileName =
+    setupType === 'replace_number' ? 'welcome-replace-number.html' : 'welcome-call-forwarding.html';
+  // Dev (ts-node): src/services → ../../emails. Prod: dist/services → ../emails (copied by build).
+  const searchRoots = [
+    path.join(__dirname, '..', 'emails'),
+    path.join(__dirname, '..', '..', 'emails'),
+  ];
+  let lastErr: unknown;
+  for (const root of searchRoots) {
+    try {
+      return await readFile(path.join(root, fileName), 'utf8');
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
 
----
+/**
+ * Replace all {{placeholders}} with escaped or computed values before send.
+ */
+function fillWelcomeEmailTemplate(html: string, params: SendWelcomeEmailParams): string {
+  const sender = (params.senderName || '').trim();
+  const business = (params.businessName || '').trim();
+  const autoReplyHtml = buildAutoReplyHtmlFragment(params);
+  const setupTypeLiteral = params.setupType;
+  const forward = (params.forwardToPhone || '').trim();
 
-Next step:
+  const replacements: Record<string, string> = {
+    '{{business_name}}': escapeHtml(business),
+    '{{sender_name}}': escapeHtml(sender),
+    '{{owner_phone}}': escapeHtml(params.ownerPhone || ''),
+    '{{leadlasso_number}}': escapeHtml(params.leadlassoNumber || ''),
+    '{{auto_reply_template}}': autoReplyHtml,
+    '{{setup_type}}': escapeHtml(setupTypeLiteral),
+    '{{forward_to_phone}}': escapeHtml(forward),
+  };
 
-Enable conditional call forwarding for missed calls (no-answer forwarding) to your LeadLasso number.
+  let out = html;
+  for (const [token, value] of Object.entries(replacements)) {
+    out = out.split(token).join(value);
+  }
+  return out;
+}
 
-Most carriers support dialing:
-*61*${leadlassoNumberDigitsOnly}#
-
-Do NOT use standard iPhone "Call Forwarding" — this forwards all calls.
-
-If that code does not work, search:
-"conditional call forwarding + your carrier"
-
----
-
-Once enabled, when you miss a call:
-LeadLasso will instantly text the customer for you.
-
-Because call forwarding depends on carrier setup, this option captures most missed call leads.
-
-If you want LeadLasso to capture all missed call leads automatically, use LeadLasso as your business number instead.
-
----
-
-How it works:
-
-1. A customer calls your business
-2. You miss the call
-3. The call forwards to LeadLasso
-4. LeadLasso instantly texts the customer
-5. They reply and you can close the job
-
----
-
-Example message you'll receive:
-
-New missed call lead A7F2
-From: +14135551234
-
-Hi, I was calling about plumbing work.
-
-Reply with:
-A7F2 Yes we can help. What seems to be the issue?
-
-LeadLasso removes the code before sending your reply to the customer.
-
-The code simply makes sure your message goes to the right lead, especially when multiple customers are texting you at the same time.
-
----
-
-Tip:
-The faster you reply, the more likely you are to win the job.
-
-You're live once call forwarding is enabled.`;
+function buildPlainTextFallback(params: SendWelcomeEmailParams): string {
+  const lines = [
+    `Hi ${(params.senderName || 'there').trim() || 'there'},`,
+    '',
+    `You're all set — LeadLasso is now live for ${params.businessName}.`,
+    '',
+    `Your LeadLasso number: ${params.leadlassoNumber}`,
+    '',
+    'https://getleadlasso.io',
+    'contact@getleadlasso.io',
+  ];
+  return lines.join('\n');
 }
 
 /**
@@ -143,18 +114,24 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
     return;
   }
 
+  let html: string;
+  try {
+    const raw = await loadWelcomeHtmlTemplate(params.setupType);
+    html = fillWelcomeEmailTemplate(raw, params);
+  } catch (err) {
+    console.error('[email] Failed to load or fill welcome HTML template', err);
+    return;
+  }
+
   const resend = new Resend(apiKey);
-  const isReplace = params.setupType === 'replace_number';
-  const subject = isReplace ? "You're live — your LeadLasso number is ready" : 'Finish your LeadLasso setup';
-  const text = isReplace
-    ? buildReplaceNumberBody(params.firstName, params.leadlassoNumber)
-    : buildForwardBody(params.firstName, params.leadlassoNumber);
+  const text = buildPlainTextFallback(params);
 
   try {
     const { error } = await resend.emails.send({
       from: fromEmail,
       to: [params.email],
-      subject,
+      subject: WELCOME_SUBJECT,
+      html,
       text,
     });
     if (error) {

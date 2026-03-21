@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-emails",
+    "copy-emails": "node -e \"require('fs').cpSync('emails','dist/emails',{recursive:true})\"",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
   },
