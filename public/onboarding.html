@@ -556,6 +556,13 @@
     const customMessageWrap = document.getElementById('custom_message_wrap');
     const defaultMessagePreview = document.getElementById('default_message_preview');
 
+    /** Branded pages may omit .card wrapper — never throw on hide. */
+    function hideOnboardingFormCard() {
+      if (!form || typeof form.closest !== 'function') return;
+      var card = form.closest('.card');
+      if (card) card.style.display = 'none';
+    }
+
     function getQueryParam(name) {
       const params = new URLSearchParams(window.location.search);
       return params.get(name);
@@ -600,8 +607,26 @@
     toggleCustomMessage();
 
     async function fetchSuccessNumber(sessionId) {
-      const res = await fetch(BACKEND_BASE + '/onboarding/success?session_id=' + encodeURIComponent(sessionId));
-      const data = await res.json().catch(function () { return {}; });
+      var url = BACKEND_BASE + '/onboarding/success?session_id=' + encodeURIComponent(sessionId);
+      console.log('[LeadLasso success] detected session_id:', sessionId);
+      console.log('[LeadLasso success] exact fetch URL:', url);
+      console.log('[LeadLasso success] page origin (CORS):', window.location.origin);
+      var res;
+      try {
+        res = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' });
+      } catch (fetchErr) {
+        console.error('[LeadLasso success] fetch error (network/CORS):', fetchErr);
+        throw fetchErr;
+      }
+      var text = await res.text();
+      console.log('[LeadLasso success] response status:', res.status);
+      console.log('[LeadLasso success] response body:', text);
+      var data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (parseErr) {
+        console.warn('[LeadLasso success] response JSON parse failed:', parseErr);
+      }
       if (res.ok && data.success && data.leadlasso_number) {
         return data.leadlasso_number;
       }
@@ -635,18 +660,18 @@
     (function checkSuccessRedirect() {
       if (getQueryParam('preview_success') === '1') {
         if (headlineSection) headlineSection.style.display = 'none';
-        form.closest('.card').style.display = 'none';
+        hideOnboardingFormCard();
         resultDiv.classList.add('result-layout-success');
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = buildSuccessHTML('+18135551234');
         return;
       }
       const success = getQueryParam('success');
-      const sessionId = getQueryParam('session_id');
+      const sessionId = (getQueryParam('session_id') || getQueryParam('sessionId') || '').trim();
       if (success !== '1' || !sessionId) return;
 
       if (headlineSection) headlineSection.style.display = 'none';
-      form.closest('.card').style.display = 'none';
+      hideOnboardingFormCard();
       resultDiv.classList.remove('result-layout-success');
       resultDiv.style.display = 'block';
       resultDiv.innerHTML = '<p class="result-headline">Setting up your number…</p><p class="field-helper">This usually takes a few seconds.</p>';
@@ -656,7 +681,11 @@
       function poll() {
         fetchSuccessNumber(sessionId).then(function (number) {
           if (number) {
-            showSuccessPage(number);
+            try {
+              showSuccessPage(number);
+            } catch (domErr) {
+              console.error('[LeadLasso success] showSuccessPage threw (not a fetch failure):', domErr);
+            }
             return;
           }
           attempts += 1;
@@ -665,7 +694,8 @@
           } else {
             resultDiv.innerHTML = '<p class="result-headline">Almost there</p><p class="field-helper">Your number is being set up. Please check back in a moment or refresh the page.</p>';
           }
-        }).catch(function () {
+        }).catch(function (err) {
+          console.error('[LeadLasso success] poll: fetch rejected:', err);
           attempts += 1;
           if (attempts < maxAttempts) setTimeout(poll, 2000);
           else resultDiv.innerHTML = '<p class="result-headline">Something went wrong</p><p class="field-helper">Please try again later.</p>';
@@ -709,7 +739,7 @@
         }
         if (res.ok && data.success) {
           if (headlineSection) headlineSection.style.display = 'none';
-          form.closest('.card').style.display = 'none';
+          hideOnboardingFormCard();
           resultDiv.classList.add('result-layout-success');
           resultDiv.style.display = 'block';
           resultDiv.innerHTML = buildSuccessHTML(data.leadlasso_number || '');
