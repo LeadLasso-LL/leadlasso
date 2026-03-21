@@ -89,7 +89,7 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
 
   let result: { business_id: string; leadlasso_number: string };
   try {
-    result = await createBusinessWithNumber(onboardingData, customerId);
+    result = await createBusinessWithNumber(onboardingData, customerId, session.id);
   } catch (err) {
     console.error('[stripe] createBusinessWithNumber failed', err);
     res.status(500).send('Internal error');

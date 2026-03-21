@@ -38,7 +38,8 @@ export type CreateBusinessResult = { business_id: string; leadlasso_number: stri
  */
 export async function createBusinessWithNumber(
   data: OnboardingBody,
-  stripeCustomerId: string | null
+  stripeCustomerId: string | null,
+  stripeCheckoutSessionId?: string | null
 ): Promise<CreateBusinessResult> {
   for (const key of REQUIRED) {
     const val = data[key];
@@ -95,6 +96,7 @@ export async function createBusinessWithNumber(
       plan_status: 'active',
       preferred_area_code,
       stripe_customer_id: stripeCustomerId,
+      stripe_checkout_session_id: stripeCheckoutSessionId ?? null,
     })
     .select('id, leadlasso_number')
     .single();
@@ -188,7 +190,20 @@ export async function handleOnboardingBusiness(req: Request, res: Response): Pro
 
 /**
  * GET /onboarding/success?session_id=cs_xxx
- * After Stripe checkout, look up the created business by session id and return leadlasso_number.
+ *
+ * Flow: Stripe redirects with ?session_id=cs_xxx → browser polls here until the webhook finishes
+ * createBusinessWithNumber (Twilio + DB insert). Then we return the provisioned number.
+ *
+ * Response when ready (200):
+ *   { "success": true, "leadlasso_number": "+1..." }
+ * (Frontend also expects success === true; leadlasso_number is the Twilio E.164 from insert.)
+ *
+ * While webhook still running or session unknown (404):
+ *   { "success": false, "error": "Business not ready yet" | ... }
+ *
+ * Lookup order:
+ *   1) businesses.stripe_checkout_session_id = session_id (same id as URL; no Stripe API needed)
+ *   2) Stripe sessions.retrieve → customer id → businesses.stripe_customer_id (legacy / fallback)
  */
 export async function handleOnboardingSuccess(req: Request, res: Response): Promise<void> {
   try {
@@ -198,6 +213,28 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
       return;
     }
 
+    // 1) Direct match: webhook stores this Checkout Session id on the row we create.
+    const { data: byCheckoutSession, error: errBySession } = await supabase
+      .from('businesses')
+      .select('leadlasso_number')
+      .eq('stripe_checkout_session_id', sessionId)
+      .limit(1)
+      .maybeSingle();
+
+    if (errBySession) {
+      console.error('[onboarding] Success lookup by checkout session error', errBySession);
+      res.status(500).json({ success: false, error: 'Lookup failed' });
+      return;
+    }
+    if (byCheckoutSession?.leadlasso_number) {
+      res.status(200).json({
+        success: true,
+        leadlasso_number: byCheckoutSession.leadlasso_number,
+      });
+      return;
+    }
+
+    // 2) Fallback: Stripe session → customer id → business (rows created before migration 006, or edge cases)
     const secretKey = process.env.STRIPE_SECRET_KEY;
     if (!secretKey) {
       res.status(500).json({ success: false, error: 'Checkout is not configured' });
@@ -208,6 +245,7 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null;
     if (!customerId) {
+      console.warn('[onboarding] Success: session has no customer yet', { sessionId, payment_status: session.payment_status });
       res.status(404).json({ success: false, error: 'Session has no customer' });
       return;
     }
@@ -220,7 +258,7 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
       .maybeSingle();
 
     if (error) {
-      console.error('[onboarding] Success lookup error', error);
+      console.error('[onboarding] Success lookup by customer error', error);
       res.status(500).json({ success: false, error: 'Lookup failed' });
       return;
     }
