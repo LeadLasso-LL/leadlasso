@@ -472,30 +472,36 @@
 
     const sendMagicLinkBtn = document.getElementById('sendMagicLinkBtn');
     sendMagicLinkBtn.addEventListener('click', async () => {
-      const emailInput = document.getElementById('emailInput');
-      if (!emailInput) {
-        console.error('Email input not found');
-        return;
-      }
-      const email = emailInput.value.trim();
-
-      if (!email) {
-        alert('Please enter your email');
-        return;
-      }
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: window.location.origin + '/portal'
+      try {
+        const emailInput = document.getElementById('emailInput');
+        if (!emailInput) {
+          console.error('Email input not found');
+          return;
         }
-      });
 
-      if (error) {
-        console.error(error);
-        alert('Error sending magic link');
-      } else {
-        alert('Magic link sent! Check your email.');
+        const email = emailInput.value.trim();
+
+        if (!email) {
+          alert('Please enter your email');
+          return;
+        }
+
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: window.location.origin + '/portal'
+          }
+        });
+
+        if (error) {
+          console.error(error);
+          alert('Error sending magic link');
+        } else {
+          alert('Magic link sent! Check your email.');
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        alert('Something went wrong. Check console.');
       }
     });
 
