@@ -170,7 +170,7 @@
       <input type="email" id="login-email" autocomplete="email" placeholder="you@example.com">
     </div>
     <p id="login-msg" class="field-helper"></p>
-    <button type="button" class="btn btn-primary" id="btn-send-magic" style="width:100%;">Send magic link</button>
+    <button type="button" class="btn btn-primary" id="sendMagicLinkBtn" style="width:100%;">Send magic link</button>
   </div>
 
   <div id="claim-fail-view" class="card hidden">
@@ -470,24 +470,26 @@
       $('settings-saved').classList.remove('hidden');
     });
 
-    $('btn-send-magic').addEventListener('click', async () => {
-      const email = $('login-email').value.trim();
-      const msg = $('login-msg');
-      msg.textContent = '';
+    const sendMagicLinkBtn = document.getElementById('sendMagicLinkBtn');
+    sendMagicLinkBtn.addEventListener('click', async () => {
+      const emailInput = document.querySelector('input[type="email"]');
+      const email = emailInput.value.trim();
+
       if (!email) {
-        msg.textContent = 'Enter your email.';
+        alert('Please enter your email');
         return;
       }
-      const redirect = window.location.origin + window.location.pathname;
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: redirect },
       });
+
       if (error) {
-        msg.textContent = error.message;
-        return;
+        console.error(error);
+        alert('Error sending magic link');
+      } else {
+        alert('Magic link sent! Check your email.');
       }
-      msg.textContent = 'Check your email for the login link.';
     });
 
     async function signOut() {
