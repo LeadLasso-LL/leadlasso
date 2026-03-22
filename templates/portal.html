@@ -277,6 +277,8 @@
     }
 
     let authBootstrapped = false;
+    /** Run claim_business_for_current_user at most once per signed-in browser session (reset on sign-out). */
+    let portalClaimRanThisSession = false;
 
     function recommendedTemplate(b) {
       const sender = (b.sender_name || 'us').trim() || 'us';
@@ -408,19 +410,27 @@
     }
 
     async function openPortal() {
-      const { data: claimRaw, error: claimErr } = await supabase.rpc('claim_business_for_current_user');
-      if (claimErr) {
-        console.error(claimErr);
-        authView.classList.add('hidden');
-        claimFailView.classList.remove('hidden');
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        showAuthView();
         return;
       }
-      const claim = claimRaw;
-      if (!claim || !claim.ok) {
-        authView.classList.add('hidden');
-        claimFailView.classList.remove('hidden');
-        return;
+
+      if (!portalClaimRanThisSession) {
+        portalClaimRanThisSession = true;
+        console.log('[portal] attempting to claim business');
+        const { data: claimRaw, error: claimErr } = await supabase.rpc('claim_business_for_current_user');
+        if (claimErr) {
+          console.log('[portal] business claim failed', claimErr);
+        } else if (claimRaw && claimRaw.ok) {
+          console.log('[portal] business claim success', claimRaw);
+        } else {
+          console.log('[portal] business claim failed', claimRaw);
+        }
       }
+
       const { data: udata } = await supabase.auth.getUser();
       const uid = udata?.user?.id;
       if (!uid) {
@@ -428,19 +438,30 @@
         claimFailView.classList.remove('hidden');
         return;
       }
-      const { data: b, error } = await supabase
-        .from('businesses')
-        .select(
-          'id, business_name, sender_name, owner_phone, forward_to_phone, auto_reply_template, leadlasso_number, preferred_area_code'
-        )
-        .eq('user_id', uid)
-        .maybeSingle();
-      if (error || !b) {
-        console.error(error);
+
+      const selectCols =
+        'id, business_name, sender_name, owner_phone, forward_to_phone, auto_reply_template, leadlasso_number, preferred_area_code';
+      let b = null;
+      let lastErr = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) {
+          await new Promise((r) => setTimeout(r, 400));
+        }
+        const { data, error } = await supabase.from('businesses').select(selectCols).eq('user_id', uid).maybeSingle();
+        lastErr = error;
+        if (data) {
+          b = data;
+          break;
+        }
+      }
+
+      if (lastErr || !b) {
+        if (lastErr) console.error(lastErr);
         authView.classList.add('hidden');
         claimFailView.classList.remove('hidden');
         return;
       }
+
       authView.classList.add('hidden');
       claimFailView.classList.add('hidden');
       appView.classList.remove('hidden');
@@ -522,6 +543,7 @@
     });
 
     async function signOut() {
+      portalClaimRanThisSession = false;
       await supabase.auth.signOut();
       showAuthView();
     }
@@ -532,6 +554,7 @@
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (!authBootstrapped) return;
       if (!session) {
+        portalClaimRanThisSession = false;
         showAuthView();
         return;
       }
