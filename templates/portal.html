@@ -262,6 +262,22 @@
     const appView = $('app-view');
     const claimFailView = $('claim-fail-view');
 
+    function showAuthView() {
+      authView.classList.remove('hidden');
+      appView.classList.add('hidden');
+      claimFailView.classList.add('hidden');
+    }
+
+    /** Remove OAuth query params and hash fragments from the address bar after auth. */
+    function cleanPortalUrlAfterAuth() {
+      const u = new URL(window.location.href);
+      ['code', 'state', 'error', 'error_description', 'error_code'].forEach((k) => u.searchParams.delete(k));
+      const search = u.searchParams.toString() ? '?' + u.searchParams.toString() : '';
+      history.replaceState(null, '', u.pathname + search);
+    }
+
+    let authBootstrapped = false;
+
     function recommendedTemplate(b) {
       const sender = (b.sender_name || 'us').trim() || 'us';
       const name = (b.business_name || 'your business').trim() || 'your business';
@@ -507,25 +523,54 @@
 
     async function signOut() {
       await supabase.auth.signOut();
-      authView.classList.remove('hidden');
-      appView.classList.add('hidden');
-      claimFailView.classList.add('hidden');
+      showAuthView();
     }
 
     $('btn-signout').addEventListener('click', signOut);
     $('btn-signout-fail').addEventListener('click', signOut);
 
     supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!authBootstrapped) return;
       if (!session) {
-        authView.classList.remove('hidden');
-        appView.classList.add('hidden');
-        claimFailView.classList.add('hidden');
+        showAuthView();
         return;
       }
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+      if (event === 'SIGNED_IN') {
         await openPortal();
       }
     });
+
+    async function bootstrapPortalAuth() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      if (code) {
+        console.log('[portal auth] found code in URL');
+        const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        if (error) {
+          console.error('[portal auth] exchangeCodeForSession error', error);
+        } else if (data.session) {
+          console.log('[portal auth] exchanged code for session');
+          cleanPortalUrlAfterAuth();
+        }
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        console.log('[portal auth] existing session found');
+        if (window.location.hash && /access_token|refresh_token/i.test(window.location.hash)) {
+          cleanPortalUrlAfterAuth();
+        }
+        await openPortal();
+      } else {
+        console.log('[portal auth] no session found');
+        showAuthView();
+      }
+    }
+
+    await bootstrapPortalAuth();
+    authBootstrapped = true;
 
     bindSettingsInputs();
   </script>
