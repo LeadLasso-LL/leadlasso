@@ -8,6 +8,7 @@ import Stripe from 'stripe';
 import { supabase } from '../lib/supabase';
 import type { SetupType } from '../lib/supabase';
 import { normalizePhone } from '../lib/phone';
+import { sendWelcomeEmailForOnboarding } from '../services/email';
 import { provisionLocalNumber, releaseNumber } from '../services/twilio-provisioning';
 
 /** Where users land after Stripe Checkout (must match hosted onboarding page). Not PUBLIC_BASE_URL (webhooks/TwiML). */
@@ -343,6 +344,11 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
         business_id: result.business_id,
         leadlasso_number: result.leadlasso_number,
       });
+      try {
+        await sendWelcomeEmailForOnboarding(onboardingData, result.leadlasso_number);
+      } catch (emailErr) {
+        console.error('[email] failed', emailErr);
+      }
       res.status(200).json({ success: true, leadlasso_number: result.leadlasso_number });
     } catch (createErr) {
       if (isUniqueViolation(createErr)) {

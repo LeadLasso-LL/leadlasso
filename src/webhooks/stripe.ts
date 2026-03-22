@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { supabase } from '../lib/supabase';
 import { createBusinessWithNumber, onboardingBodyFromCheckoutMetadata } from '../routes/onboarding';
-import { sendWelcomeEmail, type WelcomeEmailSetupType } from '../services/email';
+import { sendWelcomeEmailForOnboarding } from '../services/email';
 
 export async function handleStripeWebhook(req: Request, res: Response): Promise<void> {
   const sig = req.headers['stripe-signature'];
@@ -81,28 +81,11 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
 
   console.log('LeadLasso number provisioned:', result.leadlasso_number);
 
-  const setupTypeRaw = onboardingData.setup_type?.trim() || '';
-  const setupType: WelcomeEmailSetupType =
-    setupTypeRaw === 'forward' || setupTypeRaw === 'forwarding' ? 'forwarding' : 'replace_number';
   try {
-    await sendWelcomeEmail({
-      email: String(onboardingData.email),
-      leadlassoNumber: result.leadlasso_number,
-      setupType,
-      businessName: String(onboardingData.business_name),
-      senderName: onboardingData.sender_name?.trim() || null,
-      ownerPhone: String(onboardingData.owner_phone),
-      forwardToPhone:
-        onboardingData.forward_to_phone != null && String(onboardingData.forward_to_phone).trim() !== ''
-          ? String(onboardingData.forward_to_phone).trim()
-          : null,
-      autoReplyTemplate: onboardingData.auto_reply_template ?? null,
-    });
+    await sendWelcomeEmailForOnboarding(onboardingData, result.leadlasso_number);
   } catch (err) {
-    console.error('[stripe] Welcome email failed', err);
+    console.error('[email] failed', err);
   }
-
-  console.log('Welcome email triggered for:', onboardingData.email);
 
   res.status(200).send();
 }

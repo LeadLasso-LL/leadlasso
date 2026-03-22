@@ -1,10 +1,11 @@
 /**
  * Transactional email via Resend.
- * Welcome email sent after successful paid onboarding (Stripe webhook).
+ * Welcome email sent after successful paid onboarding (webhook and/or success endpoint).
  */
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { Resend } from 'resend';
+import type { OnboardingBody } from '../routes/onboarding';
 
 export type WelcomeEmailSetupType = 'replace_number' | 'forwarding';
 
@@ -103,23 +104,61 @@ function buildPlainTextFallback(params: SendWelcomeEmailParams): string {
   return lines.join('\n');
 }
 
+/** Map stored onboarding fields + provisioned number to welcome template params. */
+export function onboardingBodyToWelcomeParams(
+  data: OnboardingBody,
+  leadlassoNumber: string
+): SendWelcomeEmailParams {
+  const setupTypeRaw = data.setup_type?.trim() || '';
+  const setupType: WelcomeEmailSetupType =
+    setupTypeRaw === 'forward' || setupTypeRaw === 'forwarding' ? 'forwarding' : 'replace_number';
+  return {
+    email: String(data.email),
+    leadlassoNumber,
+    setupType,
+    businessName: String(data.business_name),
+    senderName: data.sender_name?.trim() || null,
+    ownerPhone: String(data.owner_phone),
+    forwardToPhone:
+      data.forward_to_phone != null && String(data.forward_to_phone).trim() !== ''
+        ? String(data.forward_to_phone).trim()
+        : null,
+    autoReplyTemplate: data.auto_reply_template ?? null,
+  };
+}
+
+/**
+ * Sends welcome email for a newly created business (use only right after createBusinessWithNumber).
+ * Delegates to {@link sendWelcomeEmail}.
+ */
+export async function sendWelcomeEmailForOnboarding(
+  data: OnboardingBody,
+  leadlassoNumber: string
+): Promise<void> {
+  const params = onboardingBodyToWelcomeParams(data, leadlassoNumber);
+  await sendWelcomeEmail(params);
+}
+
 /**
  * Sends the welcome email after successful onboarding.
- * Uses RESEND_API_KEY and FROM_EMAIL. No-op if either is missing.
+ * Uses RESEND_API_KEY and FROM_EMAIL.
  */
 export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.FROM_EMAIL;
   if (!apiKey || !fromEmail) {
+    console.log('[email] skipped — provider not configured');
     return;
   }
+
+  console.log('[email] sending welcome email', { to: params.email });
 
   let html: string;
   try {
     const raw = await loadWelcomeHtmlTemplate(params.setupType);
     html = fillWelcomeEmailTemplate(raw, params);
   } catch (err) {
-    console.error('[email] Failed to load or fill welcome HTML template', err);
+    console.error('[email] failed', err);
     return;
   }
 
@@ -135,9 +174,11 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
       text,
     });
     if (error) {
-      console.error('[email] Welcome email failed', error);
+      console.error('[email] failed', error);
+      return;
     }
+    console.log('[email] success', { to: params.email });
   } catch (err) {
-    console.error('[email] Welcome email error', err);
+    console.error('[email] failed', err);
   }
 }
