@@ -245,12 +245,6 @@
     </div>
   </div>
 
-  <script>
-    window.PORTAL_CONFIG = {
-      supabaseUrl: __SUPABASE_URL_JSON__,
-      supabaseAnonKey: __SUPABASE_ANON_KEY_JSON__
-    };
-  </script>
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -259,8 +253,7 @@
       'fuck', 'fucking', 'shit', 'damn', 'bitch', 'asshole', 'bastard', 'cunt', 'dick', 'piss', 'slut', 'whore', 'nigger', 'nigga', 'fag', 'faggot', 'retard'
     ]);
 
-    const cfg = window.PORTAL_CONFIG || {};
-    const supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+    const supabase = createClient(SUPABASE_URL_PLACEHOLDER, SUPABASE_ANON_KEY_PLACEHOLDER, {
       auth: { persistSession: true, detectSessionInUrl: true }
     });
 

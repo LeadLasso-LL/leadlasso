@@ -59,11 +59,11 @@ function getPortalTemplatePath(): string {
 
 app.get('/portal', (_req, res) => {
   try {
-    const html = fs.readFileSync(getPortalTemplatePath(), 'utf8');
-    const filled = html
-      .replace('__SUPABASE_URL_JSON__', JSON.stringify(process.env.SUPABASE_URL ?? ''))
-      .replace('__SUPABASE_ANON_KEY_JSON__', JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ''));
-    res.type('html').send(filled);
+    let html = fs.readFileSync(getPortalTemplatePath(), 'utf8');
+    html = html
+      .replace('SUPABASE_URL_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_URL))
+      .replace('SUPABASE_ANON_KEY_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_ANON_KEY));
+    res.type('html').send(html);
   } catch {
     res.status(500).type('html').send('Portal is not available (template missing).');
   }
