@@ -36,8 +36,21 @@ const EMPTY_TWIML =
 const FORWARD_REJECT_TWIML =
   '<?xml version="1.0" encoding="UTF-8"?><Response><Reject reason="rejected"/></Response>';
 
+function escapeXmlText(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * replace_number: ring owner on Dial leg with Twilio AMD so AnsweredBy is populated on status callbacks.
+ * @see https://www.twilio.com/docs/voice/twiml/number#machine-detection
+ */
 function buildDialTwiml(ownerPhone: string): string {
-  return `<?xml version="1.0" encoding="UTF-8"?><Response><Dial timeout="20">${ownerPhone}</Dial></Response>`;
+  const num = escapeXmlText(normalizePhone(ownerPhone));
+  return `<?xml version="1.0" encoding="UTF-8"?><Response><Dial timeout="20"><Number machineDetection="Enable">${num}</Number></Dial></Response>`;
 }
 
 /** Route status posts that should run the voice URL handler (legacy: statusCallback === voice URL). */
@@ -121,8 +134,8 @@ export async function handleIncomingCallStatusCallback(req: Request, res: Respon
 
   if (evaluation.reason === 'no-answer/busy/failed/canceled') {
     console.log('[call] treated as missed (reason: no-answer/busy/failed/canceled)');
-  } else if (evaluation.reason === 'short completed call <10s') {
-    console.log('[call] treated as missed (reason: short completed call <10s)');
+  } else if (evaluation.reason === 'short completed call <20s') {
+    console.log('[call] treated as missed (reason: short completed call <20s)');
   } else {
     console.log('[call] treated as missed (reason: machine/voicemail)');
   }
@@ -266,6 +279,7 @@ export async function handleIncomingCall(req: Request, res: Response): Promise<v
 
   if (business.setup_type === 'replace_number') {
     console.log('[call] Replace number mode: dialing destination phone');
+    console.log('[call] TwiML: Dial to owner with AMD enabled (Number machineDetection=Enable)');
     res.type('text/xml').status(200).send(buildDialTwiml(business.owner_phone));
     return;
   }
