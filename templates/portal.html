@@ -495,7 +495,7 @@
 
         if (error) {
           console.error(error);
-          alert('Error sending magic link');
+          alert(error.message);
         } else {
           alert('Magic link sent! Check your email.');
         }
