@@ -70,4 +70,7 @@ export interface LeadRow {
   status: 'new' | 'booked';
   created_at: string;
   booked_at: string | null;
+  source_twilio_call_sid?: string | null;
+  auto_reply_sent_at?: string | null;
+  owner_missed_call_alert_sent_at?: string | null;
 }

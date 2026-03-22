@@ -1,22 +1,14 @@
 /**
  * POST /webhooks/incoming-call
  *
- * Normal flow: customer calls the LeadLasso number → we identify the business by To (that number)
- * and either ring the owner (replace_number) or treat the forwarded call as missed (forwarding).
+ * Normal flow: customer calls the LeadLasso number → identify business by To (leadlasso_number).
+ * replace_number: TwiML Dial owner_phone.
+ * forwarding: Reject so the forwarded leg ends; final status callback drives follow-up.
  *
- * Logic (skeleton — full behavior in later phase):
- * 1. Identify business by To (leadlasso_number). If none or inactive → Reject (ignore).
- * 2. If setup_type === 'replace_number': TwiML Dial owner_phone; on no-answer, dial-action sends auto-reply SMS.
- * 3. If setup_type === 'forwarding': do not answer (Reject); send auto-reply SMS to caller (forwarded call = missed).
+ * Missed-call SMS, lead creation, and owner alert run ONLY from the final Twilio voice status
+ * callback (see handleIncomingCallStatusCallback), using CallStatus, CallDuration, and AnsweredBy.
  *
- * We do not assume the customer texts first; the call is the normal entry point.
- *
- * This same route receives Twilio voice status callbacks (CallStatus: completed, no-answer, busy, failed).
- * When a call is missed (no-answer, busy, failed):
- * 1) Prepare conversation + code for this caller (same code used when they text back).
- * 2) Send auto-reply SMS to the caller.
- * 3) If owner SMS number ≠ missed-call line (see shouldSendImmediateMissedCallOwnerAlert), send immediate owner alert.
- * Twilio retries: customer SMS deduped by CallSid; owner alert retried if first attempt failed.
+ * POST /webhooks/incoming-call/status — same handler for new number provisioning (statusCallback URL).
  */
 import { Request, Response } from 'express';
 import type { BusinessRow } from '../lib/supabase';
@@ -26,13 +18,21 @@ import {
   getConversationCodeForBusinessCustomer,
 } from '../services/conversation';
 import { sendCustomerSms, sendSms } from '../services/sms';
-import { insertLeadForMissedCall } from '../services/leads';
+import {
+  ensureMissedCallLead,
+  markLeadAutoReplySent,
+  markLeadOwnerMissedCallAlertSent,
+} from '../services/leads';
+import {
+  evaluateMissedCallFollowUp,
+  isTerminalCallStatus,
+  parseCallDurationSeconds,
+} from '../services/call-outcome';
 
-/** Empty TwiML — we do not reject or modify the call; status callback handles missed-call SMS. */
+/** Empty TwiML — legacy forwarding or mid-call status posts that must not re-run Dial. */
 const EMPTY_TWIML =
   '<?xml version="1.0" encoding="UTF-8"?><Response></Response>';
 
-/** Forward mode: end the forwarded call immediately so status callback can trigger missed-call SMS (no second ring). */
 const FORWARD_REJECT_TWIML =
   '<?xml version="1.0" encoding="UTF-8"?><Response><Reject reason="rejected"/></Response>';
 
@@ -40,16 +40,15 @@ function buildDialTwiml(ownerPhone: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?><Response><Dial timeout="20">${ownerPhone}</Dial></Response>`;
 }
 
-/** CallSids we have already sent a missed-call SMS for (prevents duplicate on Twilio retries). */
-const processedCallSids = new Set<string>();
+/** Route status posts that should run the voice URL handler (legacy: statusCallback === voice URL). */
+const STATUS_ROUTED_TO_VOICE_URL = new Set([
+  'completed',
+  'no-answer',
+  'busy',
+  'failed',
+  'canceled',
+]);
 
-/** CallSids for which the immediate owner missed-call alert SMS was sent (separate from customer SMS dedup for retries). */
-const processedOwnerMissedCallAlertSids = new Set<string>();
-
-/**
- * Immediate owner alert is redundant when the owner's SMS number is the same line that missed the call.
- * replace_number: call rings owner_phone — skip. forwarding: compare owner_phone to forward_to_phone when set.
- */
 function shouldSendImmediateMissedCallOwnerAlert(business: BusinessRow): boolean {
   const owner = normalizePhone(business.owner_phone);
   if (business.setup_type === 'replace_number') {
@@ -76,27 +75,59 @@ function normalizePhone(phone: string): string {
 }
 
 /**
- * Handles Twilio voice status webhooks. When call is no-answer, busy, or failed,
- * sends auto-reply SMS to the caller (unless caller is the owner).
+ * Final Twilio voice status callback: decide missed vs handled, then idempotent lead + SMS + owner alert.
  */
-async function handleIncomingCallStatus(req: Request, res: Response): Promise<void> {
-  const callSid = req.body.CallSid as string;
-  const callStatus = req.body.CallStatus as string;
+export async function handleIncomingCallStatusCallback(req: Request, res: Response): Promise<void> {
+  const callSid = String(req.body.CallSid ?? '').trim();
+  const callStatusRaw = String(req.body.CallStatus ?? '').trim();
+  const callStatus = callStatusRaw.toLowerCase();
   const from = req.body.From as string;
   const to = req.body.To as string;
+  const durationSec = parseCallDurationSeconds(req.body.CallDuration);
+  const answeredByRaw = req.body.AnsweredBy;
+  const answeredBy =
+    answeredByRaw != null && String(answeredByRaw).trim() !== '' ? String(answeredByRaw).trim() : undefined;
 
-  console.log('[call] Status callback received');
-  console.log('[call] CallSid:', callSid);
-  console.log('[call] From:', from);
-  console.log('[call] To:', to);
-  console.log('[call] Status:', callStatus);
+  console.log('[call] final callback received');
+  console.log('[call] status:', callStatusRaw || '(empty)');
+  console.log('[call] duration:', durationSec);
+  if (answeredBy !== undefined) {
+    console.log('[call] answeredBy:', answeredBy);
+  } else {
+    console.log('[call] answeredBy: (not provided)');
+  }
 
-  if (callStatus === 'completed') {
+  if (!isTerminalCallStatus(callStatus)) {
     res.status(200).end();
     return;
   }
 
-  if (callStatus !== 'no-answer' && callStatus !== 'busy' && callStatus !== 'failed') {
+  const evaluation = evaluateMissedCallFollowUp({
+    callStatus,
+    callDurationSeconds: durationSec,
+    answeredBy,
+  });
+
+  if (evaluation.action === 'handled') {
+    console.log('[call] treated as handled');
+    res.status(200).end();
+    return;
+  }
+
+  if (evaluation.action === 'ignore') {
+    res.status(200).end();
+    return;
+  }
+
+  if (evaluation.reason === 'no-answer/busy/failed/canceled') {
+    console.log('[call] treated as missed (reason: no-answer/busy/failed/canceled)');
+  } else if (evaluation.reason === 'short completed call <10s') {
+    console.log('[call] treated as missed (reason: short completed call <10s)');
+  } else {
+    console.log('[call] treated as missed (reason: machine/voicemail)');
+  }
+
+  if (!callSid) {
     res.status(200).end();
     return;
   }
@@ -116,19 +147,39 @@ async function handleIncomingCallStatus(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const replyText =
-    business.auto_reply_template ??
-    `Sorry we missed your call! This is ${business.sender_name ?? 'us'} with ${business.business_name}. How can we help today?`;
-
   if (!business.leadlasso_number) {
     res.status(200).end();
     return;
   }
 
-  const customerSmsAlreadySent = processedCallSids.has(callSid);
+  const replyText =
+    business.auto_reply_template ??
+    `Sorry we missed your call! This is ${business.sender_name ?? 'us'} with ${business.business_name}. How can we help today?`;
 
-  if (!customerSmsAlreadySent) {
-    let prepCode: string | null = null;
+  const leadResult = await ensureMissedCallLead(business.id, from, callSid);
+  if (!leadResult) {
+    res.status(200).end();
+    return;
+  }
+
+  const { row: leadRow, inserted } = leadResult;
+
+  if (inserted) {
+    console.log('[call] lead created');
+  }
+
+  const alreadyFullyProcessed =
+    leadRow.auto_reply_sent_at != null &&
+    (!shouldSendImmediateMissedCallOwnerAlert(business) || leadRow.owner_missed_call_alert_sent_at != null);
+
+  if (alreadyFullyProcessed) {
+    console.log('[call] skipped duplicate processing for CallSid');
+    res.status(200).end();
+    return;
+  }
+
+  let prepCode: string | null = null;
+  if (!leadRow.auto_reply_sent_at) {
     try {
       const prep = await prepareConversationForMissedCall(business, from);
       prepCode = prep?.code ?? null;
@@ -136,69 +187,58 @@ async function handleIncomingCallStatus(req: Request, res: Response): Promise<vo
       console.error('[call] prepareConversationForMissedCall failed', err);
     }
 
-    await sendCustomerSms({
-      from: business.leadlasso_number,
-      to: from,
-      body: replyText,
-    });
-    processedCallSids.add(callSid);
+    try {
+      await sendCustomerSms({
+        from: business.leadlasso_number,
+        to: from,
+        body: replyText,
+      });
+      await markLeadAutoReplySent(leadRow.id);
+      console.log('[call] follow-up SMS sent');
+    } catch (err) {
+      console.error('[call] follow-up SMS failed', err);
+    }
+  }
 
-    void insertLeadForMissedCall(business.id, fromNormalized);
-
-    if (
-      shouldSendImmediateMissedCallOwnerAlert(business) &&
-      prepCode &&
-      !processedOwnerMissedCallAlertSids.has(callSid)
-    ) {
+  if (
+    shouldSendImmediateMissedCallOwnerAlert(business) &&
+    !leadRow.owner_missed_call_alert_sent_at
+  ) {
+    const code =
+      prepCode ?? (await getConversationCodeForBusinessCustomer(business.id, from));
+    if (code) {
       try {
         await sendSms({
           from: business.leadlasso_number,
           to: business.owner_phone,
-          body: buildImmediateOwnerMissedCallAlertBody(prepCode, from),
+          body: buildImmediateOwnerMissedCallAlertBody(code, from),
         });
-        processedOwnerMissedCallAlertSids.add(callSid);
+        await markLeadOwnerMissedCallAlertSent(leadRow.id);
         console.log('[call] Immediate owner missed-call alert sent');
       } catch (err) {
         console.error('[call] Immediate owner missed-call alert failed', err);
       }
     }
-  } else {
-    // Twilio retry after customer SMS succeeded: deliver owner alert if it failed the first time.
-    if (
-      shouldSendImmediateMissedCallOwnerAlert(business) &&
-      !processedOwnerMissedCallAlertSids.has(callSid)
-    ) {
-      try {
-        const code = await getConversationCodeForBusinessCustomer(business.id, from);
-        if (code) {
-          await sendSms({
-            from: business.leadlasso_number,
-            to: business.owner_phone,
-            body: buildImmediateOwnerMissedCallAlertBody(code, from),
-          });
-          processedOwnerMissedCallAlertSids.add(callSid);
-          console.log('[call] Immediate owner missed-call alert sent (retry)');
-        }
-      } catch (err) {
-        console.error('[call] Immediate owner missed-call alert retry failed', err);
-      }
-    }
-    console.log('[call] Duplicate webhook ignored (customer SMS already sent)');
   }
 
-  console.log('[call] Business found: true');
-  console.log('[call] Missed call detected');
-  if (!customerSmsAlreadySent) console.log('[sms] Auto-text sent');
   res.status(200).end();
 }
 
 export async function handleIncomingCall(req: Request, res: Response): Promise<void> {
-  const callStatus = req.body.CallStatus as string | undefined;
-  if (
-    callStatus &&
-    (callStatus === 'completed' || callStatus === 'no-answer' || callStatus === 'busy' || callStatus === 'failed')
-  ) {
-    return handleIncomingCallStatus(req, res);
+  const callStatusRaw = req.body.CallStatus as string | undefined;
+  const callStatus = callStatusRaw?.trim().toLowerCase() ?? '';
+
+  if (callStatusRaw && STATUS_ROUTED_TO_VOICE_URL.has(callStatus)) {
+    return handleIncomingCallStatusCallback(req, res);
+  }
+
+  /**
+   * Legacy: statusCallback === voice URL. After TwiML answered, Twilio may POST in-progress;
+   * returning <Dial> again would be wrong.
+   */
+  if (callStatus === 'in-progress') {
+    res.type('text/xml').status(200).send(EMPTY_TWIML);
+    return;
   }
 
   console.log('[incoming-call] Webhook received');
@@ -230,15 +270,10 @@ export async function handleIncomingCall(req: Request, res: Response): Promise<v
     return;
   }
 
-  console.log('[call] Forward mode: treating forwarded call as missed');
+  console.log('[call] Forward mode: Reject forwarded leg; final status callback drives follow-up');
   res.type('text/xml').status(200).send(FORWARD_REJECT_TWIML);
-  return;
 }
 
-/**
- * Called by Twilio when the Dial to the owner ends (no-answer, completed, etc.).
- * Skeleton: just hang up. Later: if no-answer, send auto-reply SMS to caller.
- */
 export async function handleIncomingCallDialAction(req: Request, res: Response): Promise<void> {
   res.type('text/xml').status(200).send(EMPTY_TWIML);
 }

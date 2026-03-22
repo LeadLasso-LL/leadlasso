@@ -69,8 +69,9 @@ Run the migration in the Supabase SQL Editor (or via CLI).
 
 ## Webhook endpoint skeletons
 
-- **POST /webhooks/incoming-call** — Identify business by To; if none or inactive, Reject. Skeleton: always Reject; later branch on setup_type (replace_number vs forwarding).
-- **POST /webhooks/incoming-call/dial-action** — Called when Dial to owner ends. Skeleton: Hangup. Later: send auto-reply SMS on no-answer.
+- **POST /webhooks/incoming-call** — Initial inbound voice: TwiML Dial (replace_number) or Reject (forwarding). Does **not** send missed-call SMS or create leads.
+- **POST /webhooks/incoming-call/status** — Twilio voice **status callback** (final outcomes). Missed-call rules (duration, status, `AnsweredBy`), lead insert, and customer/owner SMS run here only. New numbers use this URL from provisioning; run migration `008_leads_call_followup_dedupe.sql` for idempotent `CallSid` dedupe. Existing Twilio numbers may still post terminal statuses to the voice URL (legacy); that path is still supported.
+- **POST /webhooks/incoming-call/dial-action** — Dial action URL; returns empty TwiML.
 - **POST /webhooks/incoming-sms** — Identify business by To; if From === owner, treat as owner reply (most recent conversation); else customer (find/create conversation, forward to owner). Skeleton: lookups only; no send yet.
 - **POST /webhooks/owner-reply** — Identify owner by From; most recent active conversation; skeleton: update timestamps only; later: send to customer.
 

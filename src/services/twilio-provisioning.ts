@@ -31,13 +31,14 @@ export async function provisionLocalNumber(areaCode: string): Promise<Provisione
 
   const baseUrl = getPublicBaseUrl();
   const voiceUrl = `${baseUrl}/webhooks/incoming-call`;
+  const voiceStatusUrl = `${baseUrl}/webhooks/incoming-call/status`;
   const smsUrl = `${baseUrl}/webhooks/incoming-sms`;
 
   const purchased = await twilioClient.incomingPhoneNumbers.create({
     phoneNumber: available[0].phoneNumber,
     voiceUrl,
     voiceMethod: 'POST',
-    statusCallback: voiceUrl,
+    statusCallback: voiceStatusUrl,
     statusCallbackMethod: 'POST',
     smsUrl,
     smsMethod: 'POST',

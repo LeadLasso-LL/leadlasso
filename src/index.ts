@@ -7,7 +7,11 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
-import { handleIncomingCall, handleIncomingCallDialAction } from './webhooks/incoming-call';
+import {
+  handleIncomingCall,
+  handleIncomingCallDialAction,
+  handleIncomingCallStatusCallback,
+} from './webhooks/incoming-call';
 import { handleIncomingSms } from './webhooks/sms';
 import { handleOwnerReply } from './webhooks/owner-reply';
 import { handleOnboardingBusiness, handleOnboardingSuccess } from './routes/onboarding';
@@ -96,6 +100,7 @@ app.get('/health', (_req, res) => {
 // --- Webhooks: same URLs for all LeadLasso numbers; backend resolves business by To (or From for owner-reply) ---
 
 app.post('/webhooks/incoming-call', handleIncomingCall);
+app.post('/webhooks/incoming-call/status', handleIncomingCallStatusCallback);
 app.all('/webhooks/incoming-call/dial-action', handleIncomingCallDialAction);
 
 app.post('/webhooks/incoming-sms', handleIncomingSms);
