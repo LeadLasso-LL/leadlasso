@@ -5,28 +5,8 @@
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { supabase } from '../lib/supabase';
-import { createBusinessWithNumber, type OnboardingBody } from '../routes/onboarding';
+import { createBusinessWithNumber, onboardingBodyFromCheckoutMetadata } from '../routes/onboarding';
 import { sendWelcomeEmail, type WelcomeEmailSetupType } from '../services/email';
-
-function metadataToOnboardingBody(metadata: Record<string, string> | null): OnboardingBody | null {
-  if (!metadata || !metadata.business_name || !metadata.email || !metadata.owner_phone || !metadata.setup_type || !metadata.preferred_area_code) {
-    return null;
-  }
-  const setupType = metadata.setup_type?.trim() || '';
-  if (setupType === 'replace_number' && (!metadata.forward_to_phone || String(metadata.forward_to_phone).trim() === '')) {
-    return null;
-  }
-  return {
-    business_name: metadata.business_name,
-    sender_name: metadata.sender_name || undefined,
-    email: metadata.email,
-    owner_phone: metadata.owner_phone,
-    forward_to_phone: metadata.forward_to_phone && String(metadata.forward_to_phone).trim() !== '' ? metadata.forward_to_phone : undefined,
-    preferred_area_code: metadata.preferred_area_code,
-    setup_type: metadata.setup_type,
-    auto_reply_template: metadata.auto_reply_template && metadata.auto_reply_template.trim() !== '' ? metadata.auto_reply_template : null,
-  };
-}
 
 export async function handleStripeWebhook(req: Request, res: Response): Promise<void> {
   const sig = req.headers['stripe-signature'];
@@ -80,7 +60,10 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     return;
   }
 
-  const onboardingData = metadataToOnboardingBody(session.metadata as Record<string, string> | null);
+  const onboardingData = onboardingBodyFromCheckoutMetadata(
+    session.metadata as Record<string, string> | null,
+    session.customer_email || session.customer_details?.email || null
+  );
   if (!onboardingData) {
     console.error('[stripe] checkout.session.completed missing or invalid metadata');
     res.status(200).send();

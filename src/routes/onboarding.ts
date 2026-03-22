@@ -26,6 +26,52 @@ export type OnboardingBody = {
   preferred_area_code?: string;
 };
 
+/**
+ * Maps Stripe Checkout session.metadata (+ optional email from session) to onboarding body.
+ * Shared by GET /onboarding/success and the Stripe webhook.
+ */
+export function onboardingBodyFromCheckoutMetadata(
+  metadata: Record<string, string> | null | undefined,
+  emailFallback?: string | null
+): OnboardingBody | null {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const email =
+    (metadata.email && String(metadata.email).trim()) ||
+    (emailFallback && String(emailFallback).trim()) ||
+    '';
+  if (!email || !metadata.business_name || !metadata.owner_phone || !metadata.setup_type || !metadata.preferred_area_code) {
+    return null;
+  }
+  const setupType = String(metadata.setup_type).trim() || '';
+  if (setupType === 'replace_number' && (!metadata.forward_to_phone || String(metadata.forward_to_phone).trim() === '')) {
+    return null;
+  }
+  return {
+    business_name: String(metadata.business_name).trim(),
+    sender_name: metadata.sender_name ? String(metadata.sender_name).trim() : undefined,
+    email,
+    owner_phone: String(metadata.owner_phone).trim(),
+    forward_to_phone:
+      metadata.forward_to_phone && String(metadata.forward_to_phone).trim() !== ''
+        ? String(metadata.forward_to_phone).trim()
+        : undefined,
+    preferred_area_code: String(metadata.preferred_area_code).trim(),
+    setup_type: String(metadata.setup_type).trim(),
+    auto_reply_template:
+      metadata.auto_reply_template && String(metadata.auto_reply_template).trim() !== ''
+        ? String(metadata.auto_reply_template).trim()
+        : null,
+  };
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  if (err && typeof err === 'object' && 'code' in err && String((err as { code: string }).code) === '23505') {
+    return true;
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('duplicate key') || msg.includes('23505') || msg.includes('unique constraint');
+}
+
 function toSetupType(value: string): SetupType {
   if (value === 'forward' || value === 'forwarding') return 'forwarding';
   if (value === 'replace_number') return 'replace_number';
@@ -192,19 +238,11 @@ export async function handleOnboardingBusiness(req: Request, res: Response): Pro
 /**
  * GET /onboarding/success?session_id=cs_xxx
  *
- * Flow: Stripe redirects with ?session_id=cs_xxx → browser polls here until the webhook finishes
- * createBusinessWithNumber (Twilio + DB insert). Then we return the provisioned number.
+ * Self-contained: retrieves the Stripe Checkout Session, ensures the business row exists
+ * (creates + provisions Twilio via createBusinessWithNumber if needed). Does not depend on
+ * webhook timing. Idempotent for the same session_id / customer.
  *
- * Response when ready (200):
- *   { "success": true, "leadlasso_number": "+1..." }
- * (Frontend also expects success === true; leadlasso_number is the Twilio E.164 from insert.)
- *
- * While webhook still running or session unknown (404):
- *   { "success": false, "error": "Business not ready yet" | ... }
- *
- * Lookup order:
- *   1) businesses.stripe_checkout_session_id = session_id (same id as URL; no Stripe API needed)
- *   2) Stripe sessions.retrieve → customer id → businesses.stripe_customer_id (legacy / fallback)
+ * 200: { success: true, leadlasso_number: "+1..." }
  */
 export async function handleOnboardingSuccess(req: Request, res: Response): Promise<void> {
   try {
@@ -214,8 +252,30 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
       return;
     }
 
-    // 1) Direct match: webhook stores this Checkout Session id on the row we create.
-    const { data: byCheckoutSession, error: errBySession } = await supabase
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    if (!secretKey) {
+      res.status(500).json({ success: false, error: 'Checkout is not configured' });
+      return;
+    }
+
+    const stripe = new Stripe(secretKey);
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log('[onboarding] Success: retrieved checkout session', {
+      sessionId,
+      status: session.status,
+      payment_status: session.payment_status,
+    });
+
+    if (session.status !== 'complete') {
+      res.status(400).json({ success: false, error: 'Checkout session is not complete' });
+      return;
+    }
+    if (session.payment_status !== 'paid') {
+      res.status(400).json({ success: false, error: 'Payment not completed' });
+      return;
+    }
+
+    const { data: bySessionRow, error: errBySession } = await supabase
       .from('businesses')
       .select('leadlasso_number')
       .eq('stripe_checkout_session_id', sessionId)
@@ -227,48 +287,92 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
       res.status(500).json({ success: false, error: 'Lookup failed' });
       return;
     }
-    if (byCheckoutSession?.leadlasso_number) {
-      res.status(200).json({
-        success: true,
-        leadlasso_number: byCheckoutSession.leadlasso_number,
-      });
+    if (bySessionRow?.leadlasso_number) {
+      console.log('[onboarding] Success: business already exists for session', sessionId);
+      res.status(200).json({ success: true, leadlasso_number: bySessionRow.leadlasso_number });
       return;
     }
 
-    // 2) Fallback: Stripe session → customer id → business (rows created before migration 006, or edge cases)
-    const secretKey = process.env.STRIPE_SECRET_KEY;
-    if (!secretKey) {
-      res.status(500).json({ success: false, error: 'Checkout is not configured' });
-      return;
-    }
-
-    const stripe = new Stripe(secretKey);
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
     const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null;
-    if (!customerId) {
-      console.warn('[onboarding] Success: session has no customer yet', { sessionId, payment_status: session.payment_status });
-      res.status(404).json({ success: false, error: 'Session has no customer' });
+
+    if (customerId) {
+      const { data: byCustomer, error: errCustomer } = await supabase
+        .from('businesses')
+        .select('leadlasso_number, stripe_checkout_session_id')
+        .eq('stripe_customer_id', customerId)
+        .limit(1)
+        .maybeSingle();
+
+      if (errCustomer) {
+        console.error('[onboarding] Success lookup by customer error', errCustomer);
+        res.status(500).json({ success: false, error: 'Lookup failed' });
+        return;
+      }
+      if (byCustomer?.leadlasso_number) {
+        if (!byCustomer.stripe_checkout_session_id) {
+          const { error: patchErr } = await supabase
+            .from('businesses')
+            .update({ stripe_checkout_session_id: sessionId })
+            .eq('stripe_customer_id', customerId);
+          if (patchErr) {
+            console.warn('[onboarding] Success: could not backfill stripe_checkout_session_id', patchErr);
+          } else {
+            console.log('[onboarding] Success: backfilled stripe_checkout_session_id for customer', customerId);
+          }
+        }
+        console.log('[onboarding] Success: business already exists for customer', customerId);
+        res.status(200).json({ success: true, leadlasso_number: byCustomer.leadlasso_number });
+        return;
+      }
+    }
+
+    const emailFallback = session.customer_email || session.customer_details?.email || null;
+    const onboardingData = onboardingBodyFromCheckoutMetadata(
+      session.metadata as Record<string, string> | null,
+      emailFallback
+    );
+    if (!onboardingData) {
+      res.status(400).json({ success: false, error: 'Checkout session is missing required onboarding metadata' });
       return;
     }
 
-    const { data: business, error } = await supabase
-      .from('businesses')
-      .select('leadlasso_number')
-      .eq('stripe_customer_id', customerId)
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      console.error('[onboarding] Success lookup by customer error', error);
-      res.status(500).json({ success: false, error: 'Lookup failed' });
-      return;
+    try {
+      const result = await createBusinessWithNumber(onboardingData, customerId, sessionId);
+      console.log('[onboarding] Success: business created and number assigned', {
+        sessionId,
+        business_id: result.business_id,
+        leadlasso_number: result.leadlasso_number,
+      });
+      res.status(200).json({ success: true, leadlasso_number: result.leadlasso_number });
+    } catch (createErr) {
+      if (isUniqueViolation(createErr)) {
+        const { data: again } = await supabase
+          .from('businesses')
+          .select('leadlasso_number')
+          .eq('stripe_checkout_session_id', sessionId)
+          .maybeSingle();
+        if (again?.leadlasso_number) {
+          console.log('[onboarding] Success: idempotent return after unique conflict (session)', sessionId);
+          res.status(200).json({ success: true, leadlasso_number: again.leadlasso_number });
+          return;
+        }
+        if (customerId) {
+          const { data: againCust } = await supabase
+            .from('businesses')
+            .select('leadlasso_number')
+            .eq('stripe_customer_id', customerId)
+            .maybeSingle();
+          if (againCust?.leadlasso_number) {
+            console.log('[onboarding] Success: idempotent return after unique conflict (customer)', customerId);
+            res.status(200).json({ success: true, leadlasso_number: againCust.leadlasso_number });
+            return;
+          }
+        }
+      }
+      console.error('[onboarding] Success: createBusinessWithNumber failed', createErr);
+      const message = createErr instanceof Error ? createErr.message : String(createErr);
+      res.status(500).json({ success: false, error: message });
     }
-    if (!business?.leadlasso_number) {
-      res.status(404).json({ success: false, error: 'Business not ready yet' });
-      return;
-    }
-
-    res.status(200).json({ success: true, leadlasso_number: business.leadlasso_number });
   } catch (err) {
     console.error('[onboarding] Success handler error', err);
     if (!res.headersSent) {
