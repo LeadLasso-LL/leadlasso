@@ -159,22 +159,57 @@
     #app-view { max-width: 1120px; }
     .hidden { display: none !important; }
     .submit-wrap { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.15); }
+    .auth-link-wrap { text-align: center; margin-top: 0.875rem; }
+    .btn-link {
+      background: none;
+      border: none;
+      color: #fff;
+      text-decoration: underline;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0;
+      opacity: 0.9;
+    }
+    .btn-link:hover { opacity: 1; }
   </style>
 </head>
 <body>
   <div id="auth-view" class="card">
     <h1>Customer portal</h1>
-    <p class="sub">Sign in with the same email and password you use for LeadLasso. Set your password from the link in your welcome email if you haven’t yet.</p>
-    <div class="field" style="margin-top:1.5rem;">
-      <label class="field-label" for="emailInput">Email</label>
-      <input type="email" id="emailInput" autocomplete="email" placeholder="you@example.com">
+
+    <div id="auth-login-panel">
+      <p class="sub">Sign in with the same email and password you use for LeadLasso. Set your password from the link in your welcome email if you haven’t yet.</p>
+      <div class="field" style="margin-top:1.5rem;">
+        <label class="field-label" for="emailInput">Email</label>
+        <input type="email" id="emailInput" autocomplete="email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label class="field-label" for="passwordInput">Password</label>
+        <input type="password" id="passwordInput" autocomplete="current-password" placeholder="Your password">
+      </div>
+      <p id="login-error" class="error-inline hidden" role="alert"></p>
+      <button type="button" class="btn btn-primary" id="loginBtn" style="width:100%;">Sign in</button>
+      <div class="auth-link-wrap">
+        <button type="button" class="btn-link" id="linkForgotPassword">Forgot password?</button>
+      </div>
     </div>
-    <div class="field">
-      <label class="field-label" for="passwordInput">Password</label>
-      <input type="password" id="passwordInput" autocomplete="current-password" placeholder="Your password">
+
+    <div id="auth-reset-panel" class="hidden">
+      <p class="sub" style="margin-top:0.25rem;">Enter your email and we’ll send you a link to reset your password.</p>
+      <div id="reset-form-block">
+        <div class="field" style="margin-top:1.25rem;">
+          <label class="field-label" for="resetEmailInput">Email</label>
+          <input type="email" id="resetEmailInput" autocomplete="email" placeholder="you@example.com">
+        </div>
+        <p id="reset-error" class="error-inline hidden" role="alert"></p>
+        <button type="button" class="btn btn-primary" id="sendResetBtn" style="width:100%;">Send reset link</button>
+      </div>
+      <div id="reset-success" class="success-banner hidden" role="status">Check your email for a password reset link</div>
+      <div class="auth-link-wrap">
+        <button type="button" class="btn-link" id="linkBackToLogin">Back to login</button>
+      </div>
     </div>
-    <p id="login-error" class="error-inline hidden" role="alert"></p>
-    <button type="button" class="btn btn-primary" id="loginBtn" style="width:100%;">Sign in</button>
   </div>
 
   <div id="claim-fail-view" class="card hidden">
@@ -266,14 +301,83 @@
     const appView = $('app-view');
     const claimFailView = $('claim-fail-view');
 
+    /** Password reset email redirects here (must match Supabase Auth redirect allow list). */
+    const PASSWORD_RESET_REDIRECT_TO = `${window.location.origin}/auth/set-password`;
+
+    const authLoginPanel = $('auth-login-panel');
+    const authResetPanel = $('auth-reset-panel');
+    const resetFormBlock = $('reset-form-block');
+    const resetSuccessEl = $('reset-success');
+    const resetErrorEl = $('reset-error');
+    const resetEmailInput = $('resetEmailInput');
+    const sendResetBtn = $('sendResetBtn');
+
+    function showLoginAuthPanel() {
+      authLoginPanel.classList.remove('hidden');
+      authResetPanel.classList.add('hidden');
+      resetFormBlock.classList.remove('hidden');
+      resetSuccessEl.classList.add('hidden');
+      resetErrorEl.classList.add('hidden');
+      resetErrorEl.textContent = '';
+      sendResetBtn.disabled = false;
+      sendResetBtn.textContent = 'Send reset link';
+    }
+
+    function showResetAuthPanel() {
+      authLoginPanel.classList.add('hidden');
+      authResetPanel.classList.remove('hidden');
+      resetFormBlock.classList.remove('hidden');
+      resetSuccessEl.classList.add('hidden');
+      resetErrorEl.classList.add('hidden');
+      resetErrorEl.textContent = '';
+      const loginEmail = ($('emailInput').value || '').trim();
+      if (loginEmail && !resetEmailInput.value.trim()) {
+        resetEmailInput.value = loginEmail;
+      }
+      resetEmailInput.focus();
+    }
+
     function showAuthView() {
       authView.classList.remove('hidden');
       appView.classList.add('hidden');
       claimFailView.classList.add('hidden');
+      showLoginAuthPanel();
       const loginErr = $('login-error');
       if (loginErr) {
         loginErr.classList.add('hidden');
         loginErr.textContent = '';
+      }
+    }
+
+    async function sendPasswordResetEmail() {
+      const email = resetEmailInput.value.trim();
+      resetErrorEl.classList.add('hidden');
+      resetErrorEl.textContent = '';
+      if (!email) {
+        resetErrorEl.textContent = 'Enter your email.';
+        resetErrorEl.classList.remove('hidden');
+        return;
+      }
+      const prevLabel = sendResetBtn.textContent;
+      sendResetBtn.disabled = true;
+      sendResetBtn.textContent = 'Sending…';
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: PASSWORD_RESET_REDIRECT_TO,
+        });
+        if (error) {
+          resetErrorEl.textContent = error.message || 'Could not send reset email. Try again.';
+          resetErrorEl.classList.remove('hidden');
+        } else {
+          resetFormBlock.classList.add('hidden');
+          resetSuccessEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        resetErrorEl.textContent = 'Something went wrong. Try again.';
+        resetErrorEl.classList.remove('hidden');
+      } finally {
+        sendResetBtn.disabled = false;
+        sendResetBtn.textContent = prevLabel;
       }
     }
 
@@ -562,6 +666,18 @@
       if (passwordInputEl) passwordInputEl.value = '';
       history.replaceState(null, '', '/portal');
     }
+
+    $('linkForgotPassword').addEventListener('click', () => {
+      showResetAuthPanel();
+    });
+
+    $('linkBackToLogin').addEventListener('click', () => {
+      showLoginAuthPanel();
+    });
+
+    sendResetBtn.addEventListener('click', () => {
+      void sendPasswordResetEmail();
+    });
 
     $('btn-signout').addEventListener('click', signOut);
     $('btn-signout-fail').addEventListener('click', signOut);
