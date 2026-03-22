@@ -166,8 +166,8 @@
     <h1>Customer portal</h1>
     <p class="sub">Sign in with the same email you used during onboarding. We’ll email you a secure link.</p>
     <div class="field" style="margin-top:1.5rem;">
-      <label class="field-label" for="login-email">Email</label>
-      <input type="email" id="login-email" autocomplete="email" placeholder="you@example.com">
+      <label class="field-label" for="emailInput">Email</label>
+      <input type="email" id="emailInput" autocomplete="email" placeholder="you@example.com">
     </div>
     <p id="login-msg" class="field-helper"></p>
     <button type="button" class="btn btn-primary" id="sendMagicLinkBtn" style="width:100%;">Send magic link</button>
@@ -472,7 +472,11 @@
 
     const sendMagicLinkBtn = document.getElementById('sendMagicLinkBtn');
     sendMagicLinkBtn.addEventListener('click', async () => {
-      const emailInput = document.querySelector('input[type="email"]');
+      const emailInput = document.getElementById('emailInput');
+      if (!emailInput) {
+        console.error('Email input not found');
+        return;
+      }
       const email = emailInput.value.trim();
 
       if (!email) {
