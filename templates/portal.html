@@ -544,8 +544,14 @@
 
     async function signOut() {
       portalClaimRanThisSession = false;
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('[portal auth] signOut error', err);
+      }
       showAuthView();
+      history.replaceState(null, '', window.location.origin + '/portal');
+      console.log('[portal auth] signed out or cleared local auth state');
     }
 
     $('btn-signout').addEventListener('click', signOut);
