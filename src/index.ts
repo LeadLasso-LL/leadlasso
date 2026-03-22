@@ -57,15 +57,33 @@ function getPortalTemplatePath(): string {
   return path.join(__dirname, '..', 'templates', 'portal.html');
 }
 
+function getSetPasswordTemplatePath(): string {
+  const inDist = path.join(__dirname, 'templates', 'set-password.html');
+  if (fs.existsSync(inDist)) return inDist;
+  return path.join(__dirname, '..', 'templates', 'set-password.html');
+}
+
+function injectSupabaseAuthPlaceholders(html: string): string {
+  return html
+    .replace('SUPABASE_URL_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_URL))
+    .replace('SUPABASE_ANON_KEY_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_ANON_KEY));
+}
+
 app.get('/portal', (_req, res) => {
   try {
-    let html = fs.readFileSync(getPortalTemplatePath(), 'utf8');
-    html = html
-      .replace('SUPABASE_URL_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_URL))
-      .replace('SUPABASE_ANON_KEY_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_ANON_KEY));
+    const html = injectSupabaseAuthPlaceholders(fs.readFileSync(getPortalTemplatePath(), 'utf8'));
     res.type('html').send(html);
   } catch {
     res.status(500).type('html').send('Portal is not available (template missing).');
+  }
+});
+
+app.get('/auth/set-password', (_req, res) => {
+  try {
+    const html = injectSupabaseAuthPlaceholders(fs.readFileSync(getSetPasswordTemplatePath(), 'utf8'));
+    res.type('html').send(html);
+  } catch {
+    res.status(500).type('html').send('Set password page is not available (template missing).');
   }
 });
 

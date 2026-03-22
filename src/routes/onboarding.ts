@@ -8,6 +8,7 @@ import Stripe from 'stripe';
 import { supabase } from '../lib/supabase';
 import type { SetupType } from '../lib/supabase';
 import { normalizePhone } from '../lib/phone';
+import { ensureAuthUserAndLinkBusiness } from '../services/auth-provisioning';
 import { sendWelcomeEmailForOnboarding } from '../services/email';
 import { provisionLocalNumber, releaseNumber } from '../services/twilio-provisioning';
 
@@ -160,9 +161,21 @@ export async function createBusinessWithNumber(
     throw error;
   }
 
+  const businessId = business?.id ?? '';
+  const leadlassoNumber = business?.leadlasso_number ?? provisioned.phoneNumber;
+
+  if (businessId) {
+    const authResult = await ensureAuthUserAndLinkBusiness(businessId, email);
+    try {
+      await sendWelcomeEmailForOnboarding(data, leadlassoNumber, authResult.setPasswordUrl);
+    } catch (emailErr) {
+      console.error('[email] failed', emailErr);
+    }
+  }
+
   return {
-    business_id: business?.id ?? '',
-    leadlasso_number: business?.leadlasso_number ?? provisioned.phoneNumber,
+    business_id: businessId,
+    leadlasso_number: leadlassoNumber,
   };
 }
 
@@ -344,11 +357,6 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
         business_id: result.business_id,
         leadlasso_number: result.leadlasso_number,
       });
-      try {
-        await sendWelcomeEmailForOnboarding(onboardingData, result.leadlasso_number);
-      } catch (emailErr) {
-        console.error('[email] failed', emailErr);
-      }
       res.status(200).json({ success: true, leadlasso_number: result.leadlasso_number });
     } catch (createErr) {
       if (isUniqueViolation(createErr)) {

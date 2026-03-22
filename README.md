@@ -46,14 +46,16 @@ scripts/
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (backend only) |
 | `SUPABASE_ANON_KEY` | Supabase anon (public) key — injected into `/portal` for browser Auth + RLS |
+| `PORTAL_PUBLIC_ORIGIN` | Public origin for password-setup redirects (no trailing slash), e.g. `https://start.getleadlasso.io` |
+| `RESEND_API_KEY` / `FROM_EMAIL` | Welcome email (includes set-password CTA for new auth users) |
 
 Copy `.env.example` to `.env` and set these.
 
 ## Customer portal (`/portal`)
 
 - Run migration `007_portal_auth_leads_rls.sql` (adds `businesses.user_id`, `leads`, RLS, `claim_business_for_current_user()`).
-- In **Supabase → Authentication → URL configuration**, add your portal URL to **Redirect URLs** (e.g. `https://start.getleadlasso.io/portal`).
-- Customers sign in with **Email (magic link)** using the **same email** as onboarding; the RPC links the auth user to `businesses.email`.
+- In **Supabase → Authentication → URL configuration**, add **Redirect URLs**: `https://start.getleadlasso.io/portal` and `https://start.getleadlasso.io/auth/set-password` (match `PORTAL_PUBLIC_ORIGIN`).
+- New customers get a **set-password** link in the Resend welcome email (server-generated Supabase recovery link). After setting a password, they sign in at `/portal` with **email + password**. `claim_business_for_current_user()` links the session to `businesses` when needed.
 - Open **`GET /portal`** on your deployed API host (template is `templates/portal.html`, copied to `dist/templates` on build).
 
 ## Supabase schema

@@ -19,6 +19,8 @@ export type SendWelcomeEmailParams = {
   forwardToPhone: string | null;
   /** null / empty = use default auto-reply sentence in HTML */
   autoReplyTemplate: string | null;
+  /** Supabase recovery link for first-time password setup (new auth users only) */
+  setPasswordUrl?: string | null;
 };
 
 const WELCOME_SUBJECT = "You're live - Your LeadLasso number is ready";
@@ -29,6 +31,33 @@ function escapeHtml(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function escapeHtmlAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** CTA block for welcome email when set_password_url is provided (new auth users). */
+function buildSetPasswordCtaBlock(setPasswordUrl: string | null | undefined): string {
+  const url = setPasswordUrl?.trim();
+  if (!url) return '';
+  const href = escapeHtmlAttr(url);
+  return `
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin:0 0 24px 0;">
+                      <tr>
+                        <td align="center" style="padding:0;">
+                          <p style="margin:0 0 12px 0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
+                            Customer dashboard
+                          </p>
+                          <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:14px 28px; font-family:'Inter', Arial, sans-serif; font-size:15px; font-weight:600; line-height:1.3; color:#E13C3C; text-decoration:none; background-color:#ffffff; border-radius:10px; border:2px solid #ffffff;">
+                            Set your password to access your LeadLasso dashboard
+                          </a>
+                          <p style="margin:12px 0 0 0; font-family:'Inter', Arial, sans-serif; font-size:13px; line-height:1.5; font-weight:400; color:#ffffff; opacity:0.92;">
+                            This secure link expires. After setting your password, sign in at your portal with email and password.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>`.trim();
 }
 
 function defaultAutoReplyText(senderName: string, businessName: string): string {
@@ -81,6 +110,7 @@ function fillWelcomeEmailTemplate(html: string, params: SendWelcomeEmailParams):
     '{{auto_reply_template}}': autoReplyHtml,
     '{{setup_type}}': escapeHtml(setupTypeLiteral),
     '{{forward_to_phone}}': escapeHtml(forward),
+    '{{set_password_cta_block}}': buildSetPasswordCtaBlock(params.setPasswordUrl),
   };
 
   let out = html;
@@ -98,9 +128,11 @@ function buildPlainTextFallback(params: SendWelcomeEmailParams): string {
     '',
     `Your LeadLasso number: ${params.leadlassoNumber}`,
     '',
-    'https://getleadlasso.io',
-    'contact@getleadlasso.io',
   ];
+  if (params.setPasswordUrl?.trim()) {
+    lines.push('Set your password (one-time secure link):', params.setPasswordUrl.trim(), '');
+  }
+  lines.push('https://getleadlasso.io', 'contact@getleadlasso.io');
   return lines.join('\n');
 }
 
@@ -133,9 +165,13 @@ export function onboardingBodyToWelcomeParams(
  */
 export async function sendWelcomeEmailForOnboarding(
   data: OnboardingBody,
-  leadlassoNumber: string
+  leadlassoNumber: string,
+  setPasswordUrl?: string | null
 ): Promise<void> {
-  const params = onboardingBodyToWelcomeParams(data, leadlassoNumber);
+  const params: SendWelcomeEmailParams = {
+    ...onboardingBodyToWelcomeParams(data, leadlassoNumber),
+    setPasswordUrl: setPasswordUrl ?? null,
+  };
   await sendWelcomeEmail(params);
 }
 
@@ -151,7 +187,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
     return;
   }
 
-  console.log('[email] sending welcome email', { to: params.email });
+  console.log('[email] sending welcome email');
 
   let html: string;
   try {
@@ -177,7 +213,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
       console.error('[email] failed', error);
       return;
     }
-    console.log('[email] success', { to: params.email });
+    console.log('[email] success');
   } catch (err) {
     console.error('[email] failed', err);
   }

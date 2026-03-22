@@ -46,7 +46,7 @@
       margin-top: 0.375rem;
       line-height: 1.45;
     }
-    input[type="text"], input[type="email"], input[type="tel"], textarea {
+    input[type="text"], input[type="email"], input[type="password"], input[type="tel"], textarea {
       width: 100%;
       padding: 0.75rem 1rem;
       font-family: inherit;
@@ -164,13 +164,17 @@
 <body>
   <div id="auth-view" class="card">
     <h1>Customer portal</h1>
-    <p class="sub">Sign in with the same email you used during onboarding. We’ll email you a secure link.</p>
+    <p class="sub">Sign in with the same email and password you use for LeadLasso. Set your password from the link in your welcome email if you haven’t yet.</p>
     <div class="field" style="margin-top:1.5rem;">
       <label class="field-label" for="emailInput">Email</label>
       <input type="email" id="emailInput" autocomplete="email" placeholder="you@example.com">
     </div>
-    <p id="login-msg" class="field-helper"></p>
-    <button type="button" class="btn btn-primary" id="sendMagicLinkBtn" style="width:100%;">Send magic link</button>
+    <div class="field">
+      <label class="field-label" for="passwordInput">Password</label>
+      <input type="password" id="passwordInput" autocomplete="current-password" placeholder="Your password">
+    </div>
+    <p id="login-error" class="error-inline hidden" role="alert"></p>
+    <button type="button" class="btn btn-primary" id="loginBtn" style="width:100%;">Sign in</button>
   </div>
 
   <div id="claim-fail-view" class="card hidden">
@@ -254,7 +258,7 @@
     ]);
 
     const supabase = createClient(SUPABASE_URL_PLACEHOLDER, SUPABASE_ANON_KEY_PLACEHOLDER, {
-      auth: { persistSession: true, detectSessionInUrl: true }
+      auth: { persistSession: true, detectSessionInUrl: false },
     });
 
     const $ = (id) => document.getElementById(id);
@@ -266,14 +270,11 @@
       authView.classList.remove('hidden');
       appView.classList.add('hidden');
       claimFailView.classList.add('hidden');
-    }
-
-    /** Remove OAuth query params and hash fragments from the address bar after auth. */
-    function cleanPortalUrlAfterAuth() {
-      const u = new URL(window.location.href);
-      ['code', 'state', 'error', 'error_description', 'error_code'].forEach((k) => u.searchParams.delete(k));
-      const search = u.searchParams.toString() ? '?' + u.searchParams.toString() : '';
-      history.replaceState(null, '', u.pathname + search);
+      const loginErr = $('login-error');
+      if (loginErr) {
+        loginErr.classList.add('hidden');
+        loginErr.textContent = '';
+      }
     }
 
     let authBootstrapped = false;
@@ -420,14 +421,14 @@
 
       if (!portalClaimRanThisSession) {
         portalClaimRanThisSession = true;
-        console.log('[portal] attempting to claim business');
+        console.log('[portal] attempting claim');
         const { data: claimRaw, error: claimErr } = await supabase.rpc('claim_business_for_current_user');
         if (claimErr) {
-          console.log('[portal] business claim failed', claimErr);
+          console.log('[portal] claim failed', claimErr);
         } else if (claimRaw && claimRaw.ok) {
-          console.log('[portal] business claim success', claimRaw);
+          console.log('[portal] claim success');
         } else {
-          console.log('[portal] business claim failed', claimRaw);
+          console.log('[portal] claim failed', claimRaw);
         }
       }
 
@@ -507,51 +508,59 @@
       $('settings-saved').classList.remove('hidden');
     });
 
-    const sendMagicLinkBtn = document.getElementById('sendMagicLinkBtn');
-    sendMagicLinkBtn.addEventListener('click', async () => {
+    const loginBtn = $('loginBtn');
+    const loginErrorEl = $('login-error');
+    const emailInputEl = $('emailInput');
+    const passwordInputEl = $('passwordInput');
+
+    loginBtn.addEventListener('click', async () => {
+      loginErrorEl.classList.add('hidden');
+      loginErrorEl.textContent = '';
+      const email = emailInputEl.value.trim();
+      const password = passwordInputEl.value;
+      if (!email) {
+        loginErrorEl.textContent = 'Enter your email.';
+        loginErrorEl.classList.remove('hidden');
+        return;
+      }
+      if (!password) {
+        loginErrorEl.textContent = 'Enter your password.';
+        loginErrorEl.classList.remove('hidden');
+        return;
+      }
+      loginBtn.disabled = true;
+      const prevLabel = loginBtn.textContent;
+      loginBtn.textContent = 'Signing in…';
       try {
-        const emailInput = document.getElementById('emailInput');
-        if (!emailInput) {
-          console.error('Email input not found');
-          return;
-        }
-
-        const email = emailInput.value.trim();
-
-        if (!email) {
-          alert('Please enter your email');
-          return;
-        }
-
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: window.location.origin + '/portal'
-          }
-        });
-
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          console.error(error);
-          alert(error.message);
+          console.log('[portal auth] login failed', error.message);
+          loginErrorEl.textContent = 'Invalid email or password';
+          loginErrorEl.classList.remove('hidden');
         } else {
-          alert('Magic link sent! Check your email.');
+          console.log('[portal auth] login success');
         }
       } catch (err) {
-        console.error('Login error:', err);
-        alert('Something went wrong. Check console.');
+        console.log('[portal auth] login failed', err);
+        loginErrorEl.textContent = 'Invalid email or password';
+        loginErrorEl.classList.remove('hidden');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = prevLabel;
       }
     });
 
     async function signOut() {
       portalClaimRanThisSession = false;
+      currentBusiness = null;
       try {
         await supabase.auth.signOut();
       } catch (err) {
         console.error('[portal auth] signOut error', err);
       }
       showAuthView();
-      history.replaceState(null, '', window.location.origin + '/portal');
-      console.log('[portal auth] signed out or cleared local auth state');
+      if (passwordInputEl) passwordInputEl.value = '';
+      history.replaceState(null, '', '/portal');
     }
 
     $('btn-signout').addEventListener('click', signOut);
@@ -561,6 +570,7 @@
       if (!authBootstrapped) return;
       if (!session) {
         portalClaimRanThisSession = false;
+        currentBusiness = null;
         showAuthView();
         return;
       }
@@ -570,30 +580,14 @@
     });
 
     async function bootstrapPortalAuth() {
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-      if (code) {
-        console.log('[portal auth] found code in URL');
-        const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-        if (error) {
-          console.error('[portal auth] exchangeCodeForSession error', error);
-        } else if (data.session) {
-          console.log('[portal auth] exchanged code for session');
-          cleanPortalUrlAfterAuth();
-        }
-      }
-
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (session) {
-        console.log('[portal auth] existing session found');
-        if (window.location.hash && /access_token|refresh_token/i.test(window.location.hash)) {
-          cleanPortalUrlAfterAuth();
-        }
+        console.log('[portal auth] session found');
         await openPortal();
       } else {
-        console.log('[portal auth] no session found');
+        console.log('[portal auth] no session');
         showAuthView();
       }
     }

@@ -6,7 +6,6 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { supabase } from '../lib/supabase';
 import { createBusinessWithNumber, onboardingBodyFromCheckoutMetadata } from '../routes/onboarding';
-import { sendWelcomeEmailForOnboarding } from '../services/email';
 
 export async function handleStripeWebhook(req: Request, res: Response): Promise<void> {
   const sig = req.headers['stripe-signature'];
@@ -80,12 +79,6 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
   }
 
   console.log('LeadLasso number provisioned:', result.leadlasso_number);
-
-  try {
-    await sendWelcomeEmailForOnboarding(onboardingData, result.leadlasso_number);
-  } catch (err) {
-    console.error('[email] failed', err);
-  }
 
   res.status(200).send();
 }

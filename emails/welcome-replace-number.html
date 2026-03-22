@@ -10,7 +10,7 @@
   <!--
     Subject: You're live - Your LeadLasso number is ready
     Dynamic fields: {{business_name}} {{sender_name}} {{owner_phone}} {{leadlasso_number}}
-    {{auto_reply_template}} {{setup_type}} {{forward_to_phone}}
+    {{auto_reply_template}} {{setup_type}} {{forward_to_phone}} {{set_password_cta_block}}
     Auto-reply (server-side): DEFAULT → Sorry we missed your call. This is {{sender_name}} from {{business_name}}. How can we help?
     CUSTOM → {{auto_reply_template}}
     Colors: only #DB7676, #E13C3C, plus #ffffff / rgba(255,255,255,…) for text and footer.
@@ -37,6 +37,8 @@
                     <p style="margin:0 0 24px 0; font-family:'Inter', Arial, sans-serif; font-size:15px; line-height:1.6; font-weight:400; color:#ffffff;">
                       You're all set — LeadLasso is now live for {{business_name}}.
                     </p>
+
+                    {{set_password_cta_block}}
 
                     <p style="margin:0 0 8px 0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
                       Your LeadLasso number
