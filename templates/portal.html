@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LeadLasso — Customer Portal</title>
+  <title>LeadLasso — Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
@@ -208,7 +208,7 @@
 </head>
 <body>
   <div id="auth-view" class="card">
-    <h1>Customer portal</h1>
+    <h1>LeadLasso Admin</h1>
 
     <div id="auth-login-panel">
       <p class="sub">Sign in with the same email and password you use for LeadLasso. Set your password from the link in your welcome email if you haven’t yet.</p>
@@ -253,7 +253,7 @@
   <div id="app-view" class="hidden">
     <header class="page-head">
       <div>
-        <h1>Customer portal</h1>
+        <h1>LeadLasso Admin</h1>
         <p class="sub">Leads and settings for your business.</p>
       </div>
       <button type="button" class="btn btn-ghost btn-small" id="btn-signout">Sign out</button>
@@ -276,16 +276,16 @@
           <input type="text" id="f-sender" autocomplete="given-name">
         </div>
         <div class="field">
-          <label class="field-label" for="f-owner-phone">Personal / owner phone</label>
+          <label class="field-label" for="f-owner-phone">Personal phone</label>
           <input type="tel" id="f-owner-phone" autocomplete="tel">
         </div>
         <div class="field">
-          <label class="field-label" for="f-forward">Forward-to phone (if applicable)</label>
+          <label class="field-label" for="f-forward">Forward-to phone</label>
           <input type="tel" id="f-forward" autocomplete="tel">
-          <p class="field-helper">Used for call-forwarding setups. Leave blank if you use LeadLasso as your main number.</p>
+          <p class="field-helper">Where LeadLasso calls are forwarded to</p>
         </div>
         <div class="field">
-          <span class="field-label">Text notifications (to your personal / owner phone)</span>
+          <span class="field-label">Text notifications (to your personal phone)</span>
           <div class="notify-option">
             <input type="checkbox" id="f-alert-new-lead" checked>
             <div>
