@@ -28,6 +28,7 @@ import {
   isTerminalCallStatus,
   parseCallDurationSeconds,
 } from '../services/call-outcome';
+import { isOwnerNewLeadAlertsEnabled } from '../services/owner-alerts';
 
 /** Empty TwiML — legacy forwarding or mid-call status posts that must not re-run Dial. */
 const EMPTY_TWIML =
@@ -74,6 +75,11 @@ function shouldSendImmediateMissedCallOwnerAlert(business: BusinessRow): boolean
     return owner !== normalizePhone(ft);
   }
   return true;
+}
+
+/** Immediate missed-call owner SMS: routing rules + portal preference. */
+function shouldSendNewMissedCallOwnerText(business: BusinessRow): boolean {
+  return shouldSendImmediateMissedCallOwnerAlert(business) && isOwnerNewLeadAlertsEnabled(business);
 }
 
 function buildImmediateOwnerMissedCallAlertBody(leadCode: string, callerNumber: string): string {
@@ -183,7 +189,7 @@ export async function handleIncomingCallStatusCallback(req: Request, res: Respon
 
   const alreadyFullyProcessed =
     leadRow.auto_reply_sent_at != null &&
-    (!shouldSendImmediateMissedCallOwnerAlert(business) || leadRow.owner_missed_call_alert_sent_at != null);
+    (!shouldSendNewMissedCallOwnerText(business) || leadRow.owner_missed_call_alert_sent_at != null);
 
   if (alreadyFullyProcessed) {
     console.log('[call] skipped duplicate processing for CallSid');
@@ -213,10 +219,11 @@ export async function handleIncomingCallStatusCallback(req: Request, res: Respon
     }
   }
 
-  if (
-    shouldSendImmediateMissedCallOwnerAlert(business) &&
-    !leadRow.owner_missed_call_alert_sent_at
-  ) {
+  if (shouldSendImmediateMissedCallOwnerAlert(business) && !isOwnerNewLeadAlertsEnabled(business)) {
+    console.log('[owner alerts] skipped new lead alert — preference disabled');
+  }
+
+  if (shouldSendNewMissedCallOwnerText(business) && !leadRow.owner_missed_call_alert_sent_at) {
     const code =
       prepCode ?? (await getConversationCodeForBusinessCustomer(business.id, from));
     if (code) {

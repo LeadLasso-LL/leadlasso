@@ -22,6 +22,7 @@ import {
   clearRequiresOwnerReplyIntro,
 } from '../services/conversation';
 import { sendCustomerSms, sendSms } from '../services/sms';
+import { isOwnerCustomerReplyAlertsEnabled } from '../services/owner-alerts';
 
 function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
@@ -97,11 +98,15 @@ export async function handleIncomingSms(req: Request, res: Response): Promise<vo
     const messageToOwner = sendFullOwnerIntro
       ? `New missed call lead ${code}\nFrom: ${from}\n\n${body}\n\nReply with ${code} at the start of your message to respond.`
       : `${code} ${body}`;
-    await sendSms({
-      from: business.leadlasso_number!,
-      to: business.owner_phone,
-      body: messageToOwner,
-    });
+    if (isOwnerCustomerReplyAlertsEnabled(business)) {
+      await sendSms({
+        from: business.leadlasso_number!,
+        to: business.owner_phone,
+        body: messageToOwner,
+      });
+    } else {
+      console.log('[owner alerts] skipped customer reply alert — preference disabled');
+    }
     res.type('text/xml').status(200).send(EMPTY_RESPONSE);
   } catch (err) {
     console.error('[sms] Handler error', err);

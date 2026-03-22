@@ -39,6 +39,10 @@ export interface BusinessRow {
   /** Set when created from checkout.session.completed — used by GET /onboarding/success */
   stripe_checkout_session_id: string | null;
   preferred_area_code: string | null;
+  /** Owner SMS when immediate missed-call lead alert is triggered */
+  owner_new_lead_alerts_enabled: boolean;
+  /** Owner SMS when customer texts the LeadLasso number (forwarded to owner_phone) */
+  owner_customer_reply_alerts_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

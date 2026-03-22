@@ -62,7 +62,7 @@ Copy `.env.example` to `.env` and set these.
 
 Single migration: `001_businesses_and_conversations.sql`.
 
-- **businesses:** id, business_name, sender_name, owner_phone, leadlasso_number (unique), auto_reply_template, setup_type (forwarding | replace_number), plan_status (active | inactive), created_at, updated_at.
+- **businesses:** id, business_name, sender_name, owner_phone, leadlasso_number (unique), auto_reply_template, setup_type (forwarding | replace_number), plan_status (active | inactive), `owner_new_lead_alerts_enabled`, `owner_customer_reply_alerts_enabled` (portal: owner SMS prefs, default true), created_at, updated_at.
 - **conversations:** id, business_id, customer_phone, owner_phone, leadlasso_number, status (active | closed), last_message_at, created_at, updated_at; unique(business_id, customer_phone).
 
 Run the migration in the Supabase SQL Editor (or via CLI).

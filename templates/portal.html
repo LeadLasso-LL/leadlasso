@@ -68,6 +68,30 @@
       background: rgba(255, 255, 255, 0.08);
     }
     textarea { min-height: 120px; resize: vertical; }
+    input[type="checkbox"] {
+      width: 1.125rem;
+      height: 1.125rem;
+      margin: 0;
+      flex-shrink: 0;
+      accent-color: #E13C3C;
+      cursor: pointer;
+    }
+    .notify-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+      margin-bottom: 1rem;
+    }
+    .notify-option:last-child { margin-bottom: 0; }
+    .notify-option label {
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      color: #fff;
+      line-height: 1.35;
+      margin: 0;
+    }
+    .notify-option .field-helper { margin-top: 0.25rem; margin-left: 0; }
     .btn {
       display: inline-flex;
       align-items: center;
@@ -254,6 +278,23 @@
           <p class="field-helper">Used for call-forwarding setups. Leave blank if you use LeadLasso as your main number.</p>
         </div>
         <div class="field">
+          <span class="field-label">Text notifications (to your personal / owner phone)</span>
+          <div class="notify-option">
+            <input type="checkbox" id="f-alert-new-lead" checked>
+            <div>
+              <label for="f-alert-new-lead">New missed-call lead alerts</label>
+              <p class="field-helper">Receive a text when a new missed-call lead is created.</p>
+            </div>
+          </div>
+          <div class="notify-option">
+            <input type="checkbox" id="f-alert-customer-reply" checked>
+            <div>
+              <label for="f-alert-customer-reply">Customer reply alerts</label>
+              <p class="field-helper">Receive a text when a lead replies to your LeadLasso message.</p>
+            </div>
+          </div>
+        </div>
+        <div class="field">
           <label class="field-label" for="f-message">Custom missed-call message</label>
           <textarea id="f-message" maxlength="640"></textarea>
           <p class="field-helper">Customers will receive this message after a missed call. You can include your booking link directly in this message.</p>
@@ -420,6 +461,9 @@
       ['f-business', 'f-sender', 'f-owner-phone', 'f-forward', 'f-message'].forEach((id) => {
         $(id).addEventListener('input', clearSavedBanner);
       });
+      ['f-alert-new-lead', 'f-alert-customer-reply'].forEach((id) => {
+        $(id).addEventListener('change', clearSavedBanner);
+      });
     }
 
     function updatePreview() {
@@ -510,6 +554,8 @@
       $('f-message').value = b.auto_reply_template || recommendedTemplate(b);
       $('f-ll-number').value = b.leadlasso_number || '';
       $('f-area').value = b.preferred_area_code || '';
+      $('f-alert-new-lead').checked = b.owner_new_lead_alerts_enabled !== false;
+      $('f-alert-customer-reply').checked = b.owner_customer_reply_alerts_enabled !== false;
       $('msg-error').classList.add('hidden');
       updatePreview();
     }
@@ -545,7 +591,7 @@
       }
 
       const selectCols =
-        'id, business_name, sender_name, owner_phone, forward_to_phone, auto_reply_template, leadlasso_number, preferred_area_code';
+        'id, business_name, sender_name, owner_phone, forward_to_phone, auto_reply_template, leadlasso_number, preferred_area_code, owner_new_lead_alerts_enabled, owner_customer_reply_alerts_enabled';
       let b = null;
       let lastErr = null;
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -590,6 +636,8 @@
         owner_phone: $('f-owner-phone').value.trim(),
         forward_to_phone: $('f-forward').value.trim() || null,
         auto_reply_template: msgCheck.value,
+        owner_new_lead_alerts_enabled: $('f-alert-new-lead').checked,
+        owner_customer_reply_alerts_enabled: $('f-alert-customer-reply').checked,
       };
       if (!payload.business_name) {
         msgEl.textContent = 'Business name is required.';
