@@ -26,6 +26,7 @@ import {
   getConversationCodeForBusinessCustomer,
 } from '../services/conversation';
 import { sendCustomerSms, sendSms } from '../services/sms';
+import { insertLeadForMissedCall } from '../services/leads';
 
 /** Empty TwiML — we do not reject or modify the call; status callback handles missed-call SMS. */
 const EMPTY_TWIML =
@@ -141,6 +142,8 @@ async function handleIncomingCallStatus(req: Request, res: Response): Promise<vo
       body: replyText,
     });
     processedCallSids.add(callSid);
+
+    void insertLeadForMissedCall(business.id, fromNormalized);
 
     if (
       shouldSendImmediateMissedCallOwnerAlert(business) &&

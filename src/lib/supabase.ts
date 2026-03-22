@@ -25,6 +25,8 @@ export type ConversationStatus = 'active' | 'closed';
 export interface BusinessRow {
   id: string;
   email: string | null;
+  /** Linked auth user for customer portal (Supabase Auth). */
+  user_id: string | null;
   business_name: string;
   sender_name: string | null;
   owner_phone: string;
@@ -59,4 +61,13 @@ export interface OutboundCustomerSmsRow {
   id: string;
   customer_phone: string;
   created_at: string;
+}
+
+export interface LeadRow {
+  id: string;
+  business_id: string;
+  caller_phone: string;
+  status: 'new' | 'booked';
+  created_at: string;
+  booked_at: string | null;
 }

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeadLasso — Customer Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #E13C3C 0%, #DB7676 100%);
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: #fff;
+      padding: 2rem 1.25rem 3rem;
+      -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; color: #fff; margin: 0 0 0.5rem; }
+    h1 { font-size: 1.75rem; letter-spacing: -0.02em; }
+    h2 { font-size: 1.25rem; }
+    .page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; max-width: 1120px; margin-left: auto; margin-right: auto; }
+    .sub { font-size: 0.9375rem; color: #fff; opacity: 0.88; margin: 0; line-height: 1.45; }
+    .card {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 1.75rem 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .field { margin-bottom: 1.5rem; }
+    .field:last-child { margin-bottom: 0; }
+    .field-label {
+      display: block;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      margin-bottom: 0.375rem;
+      color: #fff;
+    }
+    .field-helper {
+      font-size: 0.8125rem;
+      color: #fff;
+      opacity: 0.78;
+      margin-top: 0.375rem;
+      line-height: 1.45;
+    }
+    input[type="text"], input[type="email"], input[type="tel"], textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 10px;
+    }
+    input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, 0.5); }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.18);
+    }
+    input:disabled, textarea:disabled {
+      opacity: 0.85;
+      cursor: not-allowed;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.25rem;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.05s;
+    }
+    .btn:active { transform: scale(0.99); }
+    .btn-primary { background: #fff; color: #E13C3C; }
+    .btn-primary:hover { opacity: 0.95; }
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+    .btn-ghost:hover { background: rgba(255, 255, 255, 0.26); }
+    .btn-small { padding: 0.5rem 0.875rem; font-size: 0.8125rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      max-width: 1120px;
+      margin: 0 auto;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .lead-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+    .lead-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1.125rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 12px;
+    }
+    .lead-meta { display: flex; flex-direction: column; gap: 0.25rem; }
+    .lead-phone { font-weight: 600; font-size: 1rem; color: #fff; }
+    .lead-date { font-size: 0.8125rem; color: #fff; opacity: 0.82; }
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+    .badge-booked { background: rgba(255, 255, 255, 0.28); }
+    .empty-state { font-size: 0.9375rem; color: #fff; opacity: 0.85; margin: 0; line-height: 1.5; }
+    .error-inline { font-size: 0.8125rem; color: #fff; margin-top: 0.5rem; font-weight: 500; }
+    .success-banner {
+      font-size: 0.875rem;
+      color: #fff;
+      margin-bottom: 1rem;
+      padding: 0.625rem 0.875rem;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    .preview-box {
+      font-size: 0.875rem;
+      color: #fff;
+      line-height: 1.5;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-top: 0.5rem;
+      white-space: pre-wrap;
+    }
+    .count-row { display: flex; justify-content: space-between; align-items: center; margin-top: 0.375rem; font-size: 0.8125rem; color: #fff; opacity: 0.85; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    #auth-view, #app-view, #claim-fail-view { max-width: 420px; margin: 0 auto; }
+    #app-view { max-width: 1120px; }
+    .hidden { display: none !important; }
+    .submit-wrap { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.15); }
+  </style>
+</head>
+<body>
+  <div id="auth-view" class="card">
+    <h1>Customer portal</h1>
+    <p class="sub">Sign in with the same email you used during onboarding. We’ll email you a secure link.</p>
+    <div class="field" style="margin-top:1.5rem;">
+      <label class="field-label" for="login-email">Email</label>
+      <input type="email" id="login-email" autocomplete="email" placeholder="you@example.com">
+    </div>
+    <p id="login-msg" class="field-helper"></p>
+    <button type="button" class="btn btn-primary" id="btn-send-magic" style="width:100%;">Send magic link</button>
+  </div>
+
+  <div id="claim-fail-view" class="card hidden">
+    <h1>We couldn’t find your account</h1>
+    <p class="sub">No LeadLasso business is linked to this email yet. Use the same email as checkout, or contact support.</p>
+    <button type="button" class="btn btn-ghost" id="btn-signout-fail" style="margin-top:1rem;">Sign out</button>
+  </div>
+
+  <div id="app-view" class="hidden">
+    <header class="page-head">
+      <div>
+        <h1>Customer portal</h1>
+        <p class="sub">Leads and settings for your business.</p>
+      </div>
+      <button type="button" class="btn btn-ghost btn-small" id="btn-signout">Sign out</button>
+    </header>
+    <div class="grid">
+      <section class="card">
+        <h2>Leads</h2>
+        <p class="sub" style="margin-bottom:1rem;">Newest first.</p>
+        <ul id="leads-list" class="lead-list"></ul>
+        <p id="leads-empty" class="empty-state hidden">No leads yet. When someone misses a call to your LeadLasso number, they’ll appear here.</p>
+      </section>
+      <section class="card">
+        <h2>Settings</h2>
+        <div id="settings-saved" class="success-banner hidden">Changes saved.</div>
+        <div class="field">
+          <label class="field-label" for="f-business">Business name</label>
+          <input type="text" id="f-business" autocomplete="organization">
+        </div>
+        <div class="field">
+          <label class="field-label" for="f-sender">Your first name (used in texts)</label>
+          <input type="text" id="f-sender" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label class="field-label" for="f-owner-phone">Personal / owner phone</label>
+          <input type="tel" id="f-owner-phone" autocomplete="tel">
+        </div>
+        <div class="field">
+          <label class="field-label" for="f-forward">Forward-to phone (if applicable)</label>
+          <input type="tel" id="f-forward" autocomplete="tel">
+          <p class="field-helper">Used for call-forwarding setups. Leave blank if you use LeadLasso as your main number.</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="f-message">Custom missed-call message</label>
+          <textarea id="f-message" maxlength="640"></textarea>
+          <p class="field-helper">Customers will receive this message after a missed call. You can include your booking link directly in this message.</p>
+          <div class="count-row">
+            <span id="msg-count">0 / 640</span>
+          </div>
+          <p id="msg-error" class="error-inline hidden"></p>
+          <p class="field-helper">Preview</p>
+          <div id="msg-preview" class="preview-box"></div>
+          <div class="toolbar">
+            <button type="button" class="btn btn-ghost btn-small" id="btn-reset-template">Reset to recommended template</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">LeadLasso number</label>
+          <input type="text" id="f-ll-number" disabled readonly>
+          <p class="field-helper">This value is assigned during setup and cannot be changed.</p>
+        </div>
+        <div class="field">
+          <label class="field-label">Assigned area code</label>
+          <input type="text" id="f-area" disabled readonly>
+          <p class="field-helper">This value is assigned during setup and cannot be changed.</p>
+        </div>
+        <div class="submit-wrap">
+          <button type="button" class="btn btn-primary" id="btn-save" style="width:100%;">Save changes</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    window.PORTAL_CONFIG = {
+      supabaseUrl: __SUPABASE_URL_JSON__,
+      supabaseAnonKey: __SUPABASE_ANON_KEY_JSON__
+    };
+  </script>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+    const MAX_MESSAGE_LEN = 640;
+    const PROFANITY = new Set([
+      'fuck', 'fucking', 'shit', 'damn', 'bitch', 'asshole', 'bastard', 'cunt', 'dick', 'piss', 'slut', 'whore', 'nigger', 'nigga', 'fag', 'faggot', 'retard'
+    ]);
+
+    const cfg = window.PORTAL_CONFIG || {};
+    const supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+      auth: { persistSession: true, detectSessionInUrl: true }
+    });
+
+    const $ = (id) => document.getElementById(id);
+    const authView = $('auth-view');
+    const appView = $('app-view');
+    const claimFailView = $('claim-fail-view');
+
+    function recommendedTemplate(b) {
+      const sender = (b.sender_name || 'us').trim() || 'us';
+      const name = (b.business_name || 'your business').trim() || 'your business';
+      return `Sorry we missed your call! This is ${sender} with ${name}. How can we help today?`;
+    }
+
+    function profanityHit(text) {
+      const lower = text.toLowerCase();
+      const words = lower.match(/[a-z']+/g) || [];
+      for (const w of words) {
+        if (PROFANITY.has(w)) return w;
+      }
+      return null;
+    }
+
+    function validateMessage(raw) {
+      const t = raw.trim();
+      if (!t) return { ok: false, error: 'Message cannot be empty.' };
+      if (t.length > MAX_MESSAGE_LEN) return { ok: false, error: `Message must be at most ${MAX_MESSAGE_LEN} characters.` };
+      const bad = profanityHit(t);
+      if (bad) return { ok: false, error: 'This message contains language we can’t allow. Please revise and try again.' };
+      return { ok: true, value: t };
+    }
+
+    let currentBusiness = null;
+
+    function clearSavedBanner() {
+      const el = $('settings-saved');
+      el.classList.add('hidden');
+    }
+
+    function bindSettingsInputs() {
+      ['f-business', 'f-sender', 'f-owner-phone', 'f-forward', 'f-message'].forEach((id) => {
+        $(id).addEventListener('input', clearSavedBanner);
+      });
+    }
+
+    function updatePreview() {
+      const v = $('f-message').value;
+      $('msg-preview').textContent = v.trim() || '(empty)';
+      $('msg-count').textContent = `${v.length} / ${MAX_MESSAGE_LEN}`;
+    }
+
+    $('f-message').addEventListener('input', updatePreview);
+
+    $('btn-reset-template').addEventListener('click', () => {
+      if (!currentBusiness) return;
+      clearSavedBanner();
+      $('f-message').value = recommendedTemplate(currentBusiness);
+      $('msg-error').classList.add('hidden');
+      updatePreview();
+    });
+
+    async function loadLeads(businessId) {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id, caller_phone, status, created_at, booked_at')
+        .eq('business_id', businessId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error(error);
+        return;
+      }
+      const ul = $('leads-list');
+      ul.innerHTML = '';
+      const empty = $('leads-empty');
+      if (!data || !data.length) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      for (const row of data) {
+        const li = document.createElement('li');
+        li.className = 'lead-row';
+        const meta = document.createElement('div');
+        meta.className = 'lead-meta';
+        const phone = document.createElement('span');
+        phone.className = 'lead-phone';
+        phone.textContent = row.caller_phone;
+        const dt = document.createElement('span');
+        dt.className = 'lead-date';
+        dt.textContent = fmt.format(new Date(row.created_at));
+        meta.appendChild(phone);
+        meta.appendChild(dt);
+        const right = document.createElement('div');
+        right.style.display = 'flex';
+        right.style.alignItems = 'center';
+        right.style.gap = '0.5rem';
+        const badge = document.createElement('span');
+        badge.className = 'badge' + (row.status === 'booked' ? ' badge-booked' : '');
+        badge.textContent = row.status === 'booked' ? 'Booked' : 'New';
+        right.appendChild(badge);
+        if (row.status === 'new') {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn btn-ghost btn-small';
+          btn.textContent = 'Mark as booked';
+          btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            const { error: upErr } = await supabase
+              .from('leads')
+              .update({ status: 'booked', booked_at: new Date().toISOString() })
+              .eq('id', row.id);
+            btn.disabled = false;
+            if (upErr) console.error(upErr);
+            await loadLeads(businessId);
+          });
+          right.appendChild(btn);
+        }
+        li.appendChild(meta);
+        li.appendChild(right);
+        ul.appendChild(li);
+      }
+    }
+
+    function fillSettings(b) {
+      currentBusiness = b;
+      $('f-business').value = b.business_name || '';
+      $('f-sender').value = b.sender_name || '';
+      $('f-owner-phone').value = b.owner_phone || '';
+      $('f-forward').value = b.forward_to_phone || '';
+      $('f-message').value = b.auto_reply_template || recommendedTemplate(b);
+      $('f-ll-number').value = b.leadlasso_number || '';
+      $('f-area').value = b.preferred_area_code || '';
+      $('msg-error').classList.add('hidden');
+      updatePreview();
+    }
+
+    async function openPortal() {
+      const { data: claimRaw, error: claimErr } = await supabase.rpc('claim_business_for_current_user');
+      if (claimErr) {
+        console.error(claimErr);
+        authView.classList.add('hidden');
+        claimFailView.classList.remove('hidden');
+        return;
+      }
+      const claim = claimRaw;
+      if (!claim || !claim.ok) {
+        authView.classList.add('hidden');
+        claimFailView.classList.remove('hidden');
+        return;
+      }
+      const { data: udata } = await supabase.auth.getUser();
+      const uid = udata?.user?.id;
+      if (!uid) {
+        authView.classList.add('hidden');
+        claimFailView.classList.remove('hidden');
+        return;
+      }
+      const { data: b, error } = await supabase
+        .from('businesses')
+        .select(
+          'id, business_name, sender_name, owner_phone, forward_to_phone, auto_reply_template, leadlasso_number, preferred_area_code'
+        )
+        .eq('user_id', uid)
+        .maybeSingle();
+      if (error || !b) {
+        console.error(error);
+        authView.classList.add('hidden');
+        claimFailView.classList.remove('hidden');
+        return;
+      }
+      authView.classList.add('hidden');
+      claimFailView.classList.add('hidden');
+      appView.classList.remove('hidden');
+      fillSettings(b);
+      await loadLeads(b.id);
+    }
+
+    $('btn-save').addEventListener('click', async () => {
+      if (!currentBusiness) return;
+      const msgEl = $('msg-error');
+      msgEl.classList.add('hidden');
+      const msgCheck = validateMessage($('f-message').value);
+      if (!msgCheck.ok) {
+        msgEl.textContent = msgCheck.error;
+        msgEl.classList.remove('hidden');
+        return;
+      }
+      const payload = {
+        business_name: $('f-business').value.trim(),
+        sender_name: $('f-sender').value.trim() || null,
+        owner_phone: $('f-owner-phone').value.trim(),
+        forward_to_phone: $('f-forward').value.trim() || null,
+        auto_reply_template: msgCheck.value,
+      };
+      if (!payload.business_name) {
+        msgEl.textContent = 'Business name is required.';
+        msgEl.classList.remove('hidden');
+        return;
+      }
+      if (!payload.owner_phone) {
+        msgEl.textContent = 'Owner phone is required.';
+        msgEl.classList.remove('hidden');
+        return;
+      }
+      const { error } = await supabase.from('businesses').update(payload).eq('id', currentBusiness.id);
+      if (error) {
+        console.error(error);
+        msgEl.textContent = error.message || 'Could not save. Try again.';
+        msgEl.classList.remove('hidden');
+        return;
+      }
+      Object.assign(currentBusiness, payload);
+      $('settings-saved').classList.remove('hidden');
+    });
+
+    $('btn-send-magic').addEventListener('click', async () => {
+      const email = $('login-email').value.trim();
+      const msg = $('login-msg');
+      msg.textContent = '';
+      if (!email) {
+        msg.textContent = 'Enter your email.';
+        return;
+      }
+      const redirect = window.location.origin + window.location.pathname;
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: redirect },
+      });
+      if (error) {
+        msg.textContent = error.message;
+        return;
+      }
+      msg.textContent = 'Check your email for the login link.';
+    });
+
+    async function signOut() {
+      await supabase.auth.signOut();
+      authView.classList.remove('hidden');
+      appView.classList.add('hidden');
+      claimFailView.classList.add('hidden');
+    }
+
+    $('btn-signout').addEventListener('click', signOut);
+    $('btn-signout-fail').addEventListener('click', signOut);
+
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!session) {
+        authView.classList.remove('hidden');
+        appView.classList.add('hidden');
+        claimFailView.classList.add('hidden');
+        return;
+      }
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        await openPortal();
+      }
+    });
+
+    bindSettingsInputs();
+  </script>
+</body>
+</html>

@@ -45,8 +45,16 @@ scripts/
 | `TWILIO_WEBHOOK_BASE_URL` | Public base URL for TwiML action URLs (e.g. dial-action) |
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (backend only) |
+| `SUPABASE_ANON_KEY` | Supabase anon (public) key — injected into `/portal` for browser Auth + RLS |
 
 Copy `.env.example` to `.env` and set these.
+
+## Customer portal (`/portal`)
+
+- Run migration `007_portal_auth_leads_rls.sql` (adds `businesses.user_id`, `leads`, RLS, `claim_business_for_current_user()`).
+- In **Supabase → Authentication → URL configuration**, add your portal URL to **Redirect URLs** (e.g. `https://start.getleadlasso.io/portal`).
+- Customers sign in with **Email (magic link)** using the **same email** as onboarding; the RPC links the auth user to `businesses.email`.
+- Open **`GET /portal`** on your deployed API host (template is `templates/portal.html`, copied to `dist/templates` on build).
 
 ## Supabase schema
 

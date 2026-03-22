@@ -4,6 +4,8 @@
  * No per-business flows; no Twilio Studio as the main logic layer.
  */
 import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
 import express from 'express';
 import { handleIncomingCall, handleIncomingCallDialAction } from './webhooks/incoming-call';
 import { handleIncomingSms } from './webhooks/sms';
@@ -19,6 +21,7 @@ const CORS_ALLOWED_ORIGINS = new Set(
   [
     'https://getleadlasso.io',
     'https://www.getleadlasso.io',
+    'https://start.getleadlasso.io',
     ...(process.env.CORS_ORIGINS || '')
       .split(',')
       .map((o) => o.trim())
@@ -47,6 +50,24 @@ app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), handleSt
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+function getPortalTemplatePath(): string {
+  const inDist = path.join(__dirname, 'templates', 'portal.html');
+  if (fs.existsSync(inDist)) return inDist;
+  return path.join(__dirname, '..', 'templates', 'portal.html');
+}
+
+app.get('/portal', (_req, res) => {
+  try {
+    const html = fs.readFileSync(getPortalTemplatePath(), 'utf8');
+    const filled = html
+      .replace('__SUPABASE_URL_JSON__', JSON.stringify(process.env.SUPABASE_URL ?? ''))
+      .replace('__SUPABASE_ANON_KEY_JSON__', JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ''));
+    res.type('html').send(filled);
+  } catch {
+    res.status(500).type('html').send('Portal is not available (template missing).');
+  }
+});
 
 app.use(express.static('public'));
 

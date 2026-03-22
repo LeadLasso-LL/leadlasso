@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "tsc && npm run copy-emails",
+    "build": "tsc && npm run copy-emails && npm run copy-portal-template",
     "copy-emails": "node -e \"require('fs').cpSync('emails','dist/emails',{recursive:true})\"",
+    "copy-portal-template": "node -e \"require('fs').cpSync('templates','dist/templates',{recursive:true})\"",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
   },
