@@ -178,6 +178,14 @@
       white-space: pre-wrap;
     }
     .count-row { display: flex; justify-content: space-between; align-items: center; margin-top: 0.375rem; font-size: 0.8125rem; color: #fff; opacity: 0.85; }
+    .settings-save-confirm {
+      margin: 0.75rem 0 0;
+      text-align: center;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: #fff;
+      line-height: 1.4;
+    }
     .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
     #auth-view, #app-view, #claim-fail-view { max-width: 420px; margin: 0 auto; }
     #app-view { max-width: 1120px; }
@@ -259,7 +267,6 @@
       </section>
       <section class="card">
         <h2>Settings</h2>
-        <div id="settings-saved" class="success-banner hidden">Changes saved.</div>
         <div class="field">
           <label class="field-label" for="f-business">Business name</label>
           <input type="text" id="f-business" autocomplete="organization">
@@ -320,6 +327,7 @@
         </div>
         <div class="submit-wrap">
           <button type="button" class="btn btn-primary" id="btn-save" style="width:100%;">Save changes</button>
+          <p id="settings-save-confirm" class="settings-save-confirm hidden" role="status" aria-live="polite">✔ Changes saved</p>
         </div>
       </section>
     </div>
@@ -451,10 +459,19 @@
     }
 
     let currentBusiness = null;
+    let settingsSaveConfirmTimer = null;
+
+    function hideSettingsSaveConfirm() {
+      const el = $('settings-save-confirm');
+      if (el) el.classList.add('hidden');
+      if (settingsSaveConfirmTimer != null) {
+        clearTimeout(settingsSaveConfirmTimer);
+        settingsSaveConfirmTimer = null;
+      }
+    }
 
     function clearSavedBanner() {
-      const el = $('settings-saved');
-      el.classList.add('hidden');
+      hideSettingsSaveConfirm();
     }
 
     function bindSettingsInputs() {
@@ -547,6 +564,7 @@
 
     function fillSettings(b) {
       currentBusiness = b;
+      hideSettingsSaveConfirm();
       $('f-business').value = b.business_name || '';
       $('f-sender').value = b.sender_name || '';
       $('f-owner-phone').value = b.owner_phone || '';
@@ -657,7 +675,13 @@
         return;
       }
       Object.assign(currentBusiness, payload);
-      $('settings-saved').classList.remove('hidden');
+      hideSettingsSaveConfirm();
+      const confirmEl = $('settings-save-confirm');
+      confirmEl.classList.remove('hidden');
+      settingsSaveConfirmTimer = setTimeout(() => {
+        confirmEl.classList.add('hidden');
+        settingsSaveConfirmTimer = null;
+      }, 2000);
     });
 
     const loginBtn = $('loginBtn');
