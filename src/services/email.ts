@@ -37,27 +37,29 @@ function escapeHtmlAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-/** CTA block for welcome email when set_password_url is provided (new auth users). */
+/**
+ * CTA block for welcome email when set_password_url is provided (new auth users).
+ * Uses table + bgcolor on &lt;td&gt; so Gmail/Outlook still show a white “button” if &lt;a&gt; styles are stripped.
+ */
 function buildSetPasswordCtaBlock(setPasswordUrl: string | null | undefined): string {
   const url = setPasswordUrl?.trim();
   if (!url) return '';
   const href = escapeHtmlAttr(url);
-  return `
-                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin:14px 0 0 0;">
-                      <tr>
-                        <td align="center" style="padding:0;">
-                          <p style="margin:0 0 8px 0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.35; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
-                            Customer dashboard
-                          </p>
-                          <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:12px 24px; font-family:'Inter', Arial, sans-serif; font-size:14px; font-weight:600; line-height:1.3; color:#E13C3C; text-decoration:none; background-color:#ffffff; border-radius:10px; border:2px solid #ffffff;">
-                            Set your password to access your LeadLasso dashboard
-                          </a>
-                          <p style="margin:8px 0 0 0; font-family:'Inter', Arial, sans-serif; font-size:12px; line-height:1.45; font-weight:400; color:#ffffff; opacity:0.92;">
-                            This secure link expires. After setting your password, sign in at your portal with email and password.
-                          </p>
-                        </td>
-                      </tr>
-                    </table>`.trim();
+  const label = 'Set your password to access your LeadLasso dashboard';
+  return [
+    '<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;margin:14px 0 0 0;">',
+    '<tr><td align="center" valign="top" style="padding:0;">',
+    '<p style="margin:0 0 8px 0;font-family:Poppins,Arial,sans-serif;font-size:11px;line-height:1.35;font-weight:600;color:#ffffff;text-transform:uppercase;letter-spacing:0.12em;">Customer dashboard</p>',
+    '<table role="presentation" border="0" cellspacing="0" cellpadding="0" align="center" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;">',
+    '<tr>',
+    '<td align="center" bgcolor="#ffffff" style="background-color:#ffffff;border-radius:10px;border:2px solid #ffffff;">',
+    `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display:block;padding:12px 24px;font-family:Inter,Arial,sans-serif;font-size:14px;font-weight:600;line-height:1.4;color:#E13C3C;text-decoration:none;text-align:center;mso-line-height-rule:exactly;">${label}</a>`,
+    '</td>',
+    '</tr>',
+    '</table>',
+    '<p style="margin:8px 0 0 0;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.45;font-weight:400;color:#ffffff;opacity:0.92;">This secure link expires. After setting your password, sign in at your portal with email and password.</p>',
+    '</td></tr></table>',
+  ].join('');
 }
 
 function defaultAutoReplyText(senderName: string, businessName: string): string {
