@@ -43,16 +43,16 @@ function buildSetPasswordCtaBlock(setPasswordUrl: string | null | undefined): st
   if (!url) return '';
   const href = escapeHtmlAttr(url);
   return `
-                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin:0 0 24px 0;">
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin:14px 0 0 0;">
                       <tr>
                         <td align="center" style="padding:0;">
-                          <p style="margin:0 0 12px 0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
+                          <p style="margin:0 0 8px 0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.35; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
                             Customer dashboard
                           </p>
-                          <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:14px 28px; font-family:'Inter', Arial, sans-serif; font-size:15px; font-weight:600; line-height:1.3; color:#E13C3C; text-decoration:none; background-color:#ffffff; border-radius:10px; border:2px solid #ffffff;">
+                          <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:12px 24px; font-family:'Inter', Arial, sans-serif; font-size:14px; font-weight:600; line-height:1.3; color:#E13C3C; text-decoration:none; background-color:#ffffff; border-radius:10px; border:2px solid #ffffff;">
                             Set your password to access your LeadLasso dashboard
                           </a>
-                          <p style="margin:12px 0 0 0; font-family:'Inter', Arial, sans-serif; font-size:13px; line-height:1.5; font-weight:400; color:#ffffff; opacity:0.92;">
+                          <p style="margin:8px 0 0 0; font-family:'Inter', Arial, sans-serif; font-size:12px; line-height:1.45; font-weight:400; color:#ffffff; opacity:0.92;">
                             This secure link expires. After setting your password, sign in at your portal with email and password.
                           </p>
                         </td>

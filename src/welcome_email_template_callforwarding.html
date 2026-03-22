@@ -11,175 +11,93 @@
     Subject: You're live - Your LeadLasso number is ready
     Dynamic fields: {{business_name}} {{sender_name}} {{owner_phone}} {{leadlasso_number}}
     {{auto_reply_template}} {{setup_type}} {{forward_to_phone}} {{set_password_cta_block}}
-    Auto-reply (server-side): DEFAULT → Sorry we missed your call. This is {{sender_name}} from {{business_name}}. How can we help?
-    CUSTOM → {{auto_reply_template}}
-    Colors: only #DB7676, #E13C3C, plus #ffffff / rgba(255,255,255,…) for text and footer.
   -->
   <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; background-color:#DB7676; background-image:linear-gradient(180deg, #DB7676 0%, #E13C3C 100%);">
     <tr>
-      <td align="center" style="padding:24px 16px; background-color:transparent;">
+      <td align="center" style="padding:18px 14px; background-color:transparent;">
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; max-width:600px; width:100%; background-color:#DB7676;">
           <tr>
-            <td align="center" bgcolor="#E13C3C" style="padding:28px 24px; background-color:#E13C3C; background-image:linear-gradient(135deg, #DB7676, #E13C3C);">
-              <h1 style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:26px; line-height:1.3; font-weight:700; color:#ffffff;">
+            <td align="center" bgcolor="#E13C3C" style="padding:20px 20px; background-color:#E13C3C; background-image:linear-gradient(135deg, #DB7676, #E13C3C);">
+              <h1 style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:24px; line-height:1.3; font-weight:700; color:#ffffff;">
                 Your LeadLasso number is ready
               </h1>
             </td>
           </tr>
           <tr>
-            <td align="center" style="padding:24px 16px 32px 16px; background-color:#DB7676;">
+            <td align="center" style="padding:18px 14px 22px 14px; background-color:#DB7676;">
               <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; background-color:#E13C3C; border:2px solid #ffffff; border-radius:12px;">
                 <tr>
-                  <td style="padding:24px;">
-                    <p style="margin:0 0 6px 0; font-family:'Inter', Arial, sans-serif; font-size:16px; line-height:1.55; font-weight:400; color:#ffffff;">
+                  <td style="padding:18px;">
+                    <p style="margin:0 0 4px 0; font-family:'Inter', Arial, sans-serif; font-size:15px; line-height:1.5; font-weight:400; color:#ffffff;">
                       Hi {{sender_name}},
                     </p>
-                    <p style="margin:0 0 24px 0; font-family:'Inter', Arial, sans-serif; font-size:15px; line-height:1.6; font-weight:400; color:#ffffff;">
-                      You're all set — LeadLasso is now live for {{business_name}}.
+                    <p style="margin:0 0 16px 0; font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.5; font-weight:400; color:#ffffff;">
+                      You're live for {{business_name}}.
                     </p>
 
-                    {{set_password_cta_block}}
-
-                    <p style="margin:0 0 8px 0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
+                    <p style="margin:0 0 6px 0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.35; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
                       Your LeadLasso number
                     </p>
                     <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
                       <tr>
-                        <td align="center" style="padding:20px 18px; background-color:#DB7676; border:3px solid #ffffff; border-radius:10px;">
-                          <span style="font-family:'Inter', Arial, sans-serif; font-size:24px; line-height:1.25; font-weight:700; letter-spacing:1px; color:#ffffff;">
+                        <td align="center" style="padding:14px 16px; background-color:#DB7676; border:3px solid #ffffff; border-radius:10px;">
+                          <span style="font-family:'Inter', Arial, sans-serif; font-size:24px; line-height:1.2; font-weight:700; letter-spacing:1px; color:#ffffff;">
                             {{leadlasso_number}}
                           </span>
                         </td>
                       </tr>
                     </table>
 
-                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:24px;">
+                    {{set_password_cta_block}}
+
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:16px;">
                       <tr>
-                        <td style="padding:0 0 8px 0;">
-                          <p style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
-                            Your forwarding setup
+                        <td style="padding:0 0 6px 0;">
+                          <p style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.35; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
+                            Next step
                           </p>
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding:0;">
-                          <p style="margin:0; font-family:'Inter', Arial, sans-serif; font-size:15px; line-height:1.65; font-weight:400; color:#ffffff;">
-                            Forward missed calls from your existing business number to your LeadLasso number.
+                        <td style="padding:10px 12px; background-color:#DB7676; border-radius:10px; border:1px solid #ffffff;">
+                          <p style="margin:0; font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.55; font-weight:400; color:#ffffff;">
+                            Use this number anywhere customers contact you:<br />
+                            Google Business Profile, website, Facebook page, online ads
+                          </p>
+                          <p style="margin:10px 0 0 0; font-family:'Inter', Arial, sans-serif; font-size:12px; line-height:1.5; font-weight:400; color:#ffffff; opacity:0.95;">
+                            Forward missed calls from your current business line to {{leadlasso_number}}. Many carriers use <span style="font-family:Consolas, 'Courier New', monospace;">*61</span> plus your LeadLasso number—confirm with your provider.
                           </p>
                         </td>
                       </tr>
                     </table>
 
-                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:24px;">
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:16px;">
                       <tr>
-                        <td style="padding:0 0 8px 0;">
-                          <p style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
-                            Your setup
-                          </p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:16px; background-color:#DB7676; border-radius:10px; border:1px solid #ffffff;">
-                          <p style="margin:0 0 10px 0; font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.55; color:#ffffff;">
-                            <strong style="font-weight:700; color:#ffffff;">Business name:</strong> {{business_name}}
-                          </p>
-                          <p style="margin:0 0 10px 0; font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.55; color:#ffffff;">
-                            <strong style="font-weight:700; color:#ffffff;">Existing business number:</strong> {{owner_phone}}
-                          </p>
-                          <p style="margin:0; font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.55; color:#ffffff;">
-                            <strong style="font-weight:700; color:#ffffff;">Forward missed calls to:</strong> {{leadlasso_number}}
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:24px;">
-                      <tr>
-                        <td style="padding:0 0 8px 0;">
-                          <p style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
-                            Call forwarding instructions
-                          </p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:0 0 12px 0;">
-                          <p style="margin:0 0 12px 0; font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.65; font-weight:400; color:#ffffff;">
-                            Set up conditional call forwarding on your current business line so missed or unanswered calls forward to your LeadLasso number.<br /><br />
-                            This only affects calls you do not answer. If you answer normally, nothing changes.<br /><br />
-                            *61 is commonly the code used to set this up.
-                          </p>
-                          <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
-                            <tr>
-                              <td style="padding:16px; background-color:#DB7676; border-radius:10px; border:1px solid #ffffff;">
-                                <p style="margin:0 0 6px 0; font-family:'Poppins', Arial, sans-serif; font-size:10px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.1em;">
-                                  Example
-                                </p>
-                                <p style="margin:0; font-family:Consolas, 'Courier New', monospace; font-size:16px; line-height:1.4; font-weight:700; color:#ffffff;">
-                                  *61{{leadlasso_number}}
-                                </p>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:0;">
-                          <p style="margin:0; font-family:'Inter', Arial, sans-serif; font-size:13px; line-height:1.65; font-weight:400; color:#ffffff;">
-                            Carrier settings can vary, so if *61 does not work, contact your phone provider and ask them to enable conditional call forwarding for missed or unanswered calls to your LeadLasso number.
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:24px;">
-                      <tr>
-                        <td style="padding:0 0 8px 0;">
-                          <p style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
-                            How it works
-                          </p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:0;">
-                          <ol style="margin:0; padding:0 0 0 20px; font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.7; font-weight:400; color:#ffffff;">
-                            <li style="margin:0 0 8px 0;">A customer calls your existing business number</li>
-                            <li style="margin:0 0 8px 0;">If you answer, the call proceeds normally</li>
-                            <li style="margin:0 0 8px 0;">If you miss the call, conditional call forwarding sends it to your LeadLasso number</li>
-                            <li style="margin:0 0 8px 0;">LeadLasso automatically texts the customer after the missed call</li>
-                            <li style="margin:0;">They can reply and you can close the job</li>
-                          </ol>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <!-- AUTO_REPLY_CELL -->
-                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:24px;">
-                      <tr>
-                        <td style="padding:0 0 8px 0;">
-                          <p style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
+                        <td style="padding:0 0 6px 0;">
+                          <p style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.35; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
                             Your automatic text reply
                           </p>
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding:16px; background-color:#DB7676; border-radius:10px; border:1px solid #ffffff;">
-                          <p style="margin:0; font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.65; font-weight:400; color:#ffffff;">
+                        <td style="padding:12px; background-color:#DB7676; border-radius:10px; border:1px solid #ffffff;">
+                          <p style="margin:0; font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.55; font-weight:400; color:#ffffff;">
                             {{auto_reply_template}}
                           </p>
                         </td>
                       </tr>
                     </table>
 
-                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:24px;">
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:16px;">
                       <tr>
-                        <td style="padding:0 0 8px 0;">
-                          <p style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.4; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
+                        <td style="padding:0 0 6px 0;">
+                          <p style="margin:0; font-family:'Poppins', Arial, sans-serif; font-size:11px; line-height:1.35; font-weight:600; color:#ffffff; text-transform:uppercase; letter-spacing:0.12em;">
                             Example lead notification
                           </p>
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding:16px; background-color:#DB7676; border-radius:10px; border:1px solid #ffffff; font-family:Consolas, 'Courier New', monospace; font-size:13px; line-height:1.65; color:#ffffff;">
+                        <td style="padding:12px; background-color:#DB7676; border-radius:10px; border:1px solid #ffffff; font-family:Consolas, 'Courier New', monospace; font-size:13px; line-height:1.55; color:#ffffff;">
                           New missed call lead A7F2<br />
                           From: +14135551234<br /><br />
                           Hi, I was calling about your services.<br /><br />
@@ -189,29 +107,27 @@
                       </tr>
                     </table>
 
-                    <p style="margin:24px 0 0 0; font-family:'Inter', Arial, sans-serif; font-size:13px; line-height:1.65; font-weight:400; color:#ffffff;">
-                      LeadLasso automatically removes the code before sending your message to the customer.<br /><br />
-                      The code ensures your reply goes to the correct lead, especially when multiple conversations are active.
+                    <p style="margin:12px 0 0 0; font-family:'Inter', Arial, sans-serif; font-size:12px; line-height:1.55; font-weight:400; color:#ffffff; opacity:0.95;">
+                      LeadLasso removes the code before sending your message to the customer. The code makes sure replies go to the correct lead when more than one conversation is open.
                     </p>
+                  </td>
+                </tr>
+              </table>
 
-                    <p style="margin:24px 0 0 0; font-family:'Poppins', Arial, sans-serif; font-size:18px; line-height:1.35; font-weight:700; color:#ffffff;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:16px;">
+                <tr>
+                  <td align="center" style="padding:6px 10px;">
+                    <p style="margin:0 0 8px 0; font-family:'Poppins', Arial, sans-serif; font-size:17px; line-height:1.3; font-weight:700; color:#ffffff;">
                       You're live.
                     </p>
-                  </td>
-                </tr>
-              </table>
-
-              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse; margin-top:24px;">
-                <tr>
-                  <td align="center" style="padding:8px 12px;">
-                    <a href="https://getleadlasso.io" style="font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.5; font-weight:600; color:#ffffff; text-decoration:underline;">https://getleadlasso.io</a>
+                    <a href="https://getleadlasso.io" style="font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.45; font-weight:600; color:#ffffff; text-decoration:underline;">https://getleadlasso.io</a>
                     <span style="font-family:'Inter', Arial, sans-serif; font-size:14px; color:rgba(255,255,255,0.5);">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
-                    <a href="mailto:contact@getleadlasso.io" style="font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.5; font-weight:600; color:#ffffff; text-decoration:underline;">contact@getleadlasso.io</a>
+                    <a href="mailto:contact@getleadlasso.io" style="font-family:'Inter', Arial, sans-serif; font-size:14px; line-height:1.45; font-weight:600; color:#ffffff; text-decoration:underline;">contact@getleadlasso.io</a>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin:20px 12px 0 12px; font-family:'Inter', Arial, sans-serif; font-size:11px; line-height:1.55; font-weight:400; color:#ffffff; opacity:0.72; filter:alpha(opacity=72); text-align:center;">
+              <p style="margin:14px 10px 0 10px; font-family:'Inter', Arial, sans-serif; font-size:11px; line-height:1.5; font-weight:400; color:#ffffff; opacity:0.72; filter:alpha(opacity=72); text-align:center;">
                 By signing up, you agree to receive SMS messages related to your inquiry. Message frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out.
               </p>
             </td>
