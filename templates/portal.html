@@ -130,18 +130,59 @@
     .lead-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
     .lead-row {
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
+      flex-direction: column;
+      gap: 0.625rem;
       padding: 1rem 1.125rem;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 12px;
     }
+    .lead-row-top {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      min-width: 0;
+    }
+    .lead-expand-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: inherit;
+      width: 100%;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.625rem;
+      text-align: left;
+      padding: 0;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background-color 0.18s ease;
+    }
+    .lead-expand-btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .lead-expand-btn:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.75);
+      outline-offset: 2px;
+    }
     .lead-meta { display: flex; flex-direction: column; gap: 0.25rem; }
     .lead-phone { font-weight: 600; font-size: 1rem; color: #fff; }
     .lead-date { font-size: 0.8125rem; color: #fff; opacity: 0.82; }
+    .lead-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .lead-chevron {
+      font-size: 0.75rem;
+      color: #fff;
+      opacity: 0.86;
+      transition: transform 0.18s ease;
+      transform-origin: center;
+    }
+    .lead-expand-btn[aria-expanded="true"] .lead-chevron { transform: rotate(180deg); }
     .badge {
       display: inline-block;
       font-size: 0.75rem;
@@ -155,6 +196,72 @@
       border: 1px solid rgba(255, 255, 255, 0.35);
     }
     .badge-booked { background: rgba(255, 255, 255, 0.28); }
+    .lead-thread {
+      background: rgba(0, 0, 0, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 0.75rem;
+    }
+    .lead-thread-scroller {
+      max-height: 320px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-right: 0.125rem;
+    }
+    .lead-thread-state {
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      color: #fff;
+      opacity: 0.88;
+      margin: 0;
+      text-align: center;
+      padding: 0.5rem 0.25rem;
+    }
+    .thread-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .thread-row-customer { align-items: flex-start; }
+    .thread-row-owner { align-items: flex-end; }
+    .thread-row-system { align-items: center; }
+    .thread-bubble {
+      max-width: 92%;
+      border-radius: 10px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .thread-bubble-customer {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #fff;
+    }
+    .thread-bubble-owner {
+      background: rgba(255, 255, 255, 0.9);
+      color: #b12f2f;
+      border: 1px solid rgba(255, 255, 255, 0.95);
+    }
+    .thread-bubble-system {
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px dashed rgba(255, 255, 255, 0.3);
+      color: #fff;
+      opacity: 0.94;
+      text-align: center;
+      max-width: 100%;
+    }
+    .thread-time {
+      font-size: 0.6875rem;
+      color: #fff;
+      opacity: 0.72;
+      line-height: 1.2;
+      padding: 0 0.25rem;
+    }
     .empty-state { font-size: 0.9375rem; color: #fff; opacity: 0.85; margin: 0; line-height: 1.5; }
     .error-inline { font-size: 0.8125rem; color: #fff; margin-top: 0.5rem; font-weight: 500; }
     .success-banner {
@@ -437,6 +544,9 @@
     let authBootstrapped = false;
     /** Run claim_business_for_current_user at most once per signed-in browser session (reset on sign-out). */
     let portalClaimRanThisSession = false;
+    let expandedLeadId = null;
+    const leadThreadCache = new Map();
+    const leadThreadElements = new Map();
 
     function recommendedTemplate(b) {
       const sender = (b.sender_name || 'us').trim() || 'us';
@@ -493,6 +603,163 @@
       $('msg-count').textContent = `${v.length} / ${MAX_MESSAGE_LEN}`;
     }
 
+    function normalizePhoneForLookup(phone) {
+      const raw = String(phone || '').trim();
+      if (!raw) return '';
+      const digits = raw.replace(/\D/g, '');
+      if (digits.length === 10 && !raw.startsWith('+')) return `+1${digits}`;
+      if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+      return raw.startsWith('+') ? raw : `+${raw}`;
+    }
+
+    function safeMessageBody(value) {
+      const t = String(value == null ? '' : value);
+      return t.trim() ? t : '(empty message)';
+    }
+
+    function threadBubbleClass(senderType) {
+      if (senderType === 'owner') return 'thread-bubble-owner';
+      if (senderType === 'system') return 'thread-bubble-system';
+      return 'thread-bubble-customer';
+    }
+
+    function threadRowClass(senderType) {
+      if (senderType === 'owner') return 'thread-row-owner';
+      if (senderType === 'system') return 'thread-row-system';
+      return 'thread-row-customer';
+    }
+
+    async function fetchLeadConversationHistory(businessId, callerPhone) {
+      const customerPhone = normalizePhoneForLookup(callerPhone);
+      if (!customerPhone) {
+        return { state: 'empty', messages: [] };
+      }
+
+      const { data: convo, error: convoErr } = await supabase
+        .from('conversations')
+        .select('id, customer_phone')
+        .eq('business_id', businessId)
+        .eq('customer_phone', customerPhone)
+        .maybeSingle();
+
+      if (convoErr) {
+        throw convoErr;
+      }
+      if (!convo) {
+        return { state: 'empty', messages: [] };
+      }
+
+      const { data: messages, error: msgErr } = await supabase
+        .from('conversation_messages')
+        .select('id, sender_type, direction, body, created_at')
+        .eq('business_id', businessId)
+        .eq('conversation_id', convo.id)
+        .order('created_at', { ascending: true });
+
+      if (msgErr) {
+        throw msgErr;
+      }
+      if (!messages || !messages.length) {
+        return { state: 'empty', messages: [] };
+      }
+      return { state: 'ready', messages };
+    }
+
+    function renderThreadPanel(panelEl, threadResult) {
+      panelEl.innerHTML = '';
+
+      if (threadResult.state === 'loading') {
+        const p = document.createElement('p');
+        p.className = 'lead-thread-state';
+        p.textContent = 'Loading conversation...';
+        panelEl.appendChild(p);
+        return;
+      }
+
+      if (threadResult.state === 'error') {
+        const p = document.createElement('p');
+        p.className = 'lead-thread-state';
+        p.textContent = 'Couldn’t load conversation history.';
+        panelEl.appendChild(p);
+        return;
+      }
+
+      if (!threadResult.messages || !threadResult.messages.length) {
+        const p = document.createElement('p');
+        p.className = 'lead-thread-state';
+        p.textContent = 'No conversation history yet.';
+        panelEl.appendChild(p);
+        return;
+      }
+
+      const scroller = document.createElement('div');
+      scroller.className = 'lead-thread-scroller';
+      const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      for (const msg of threadResult.messages) {
+        const row = document.createElement('div');
+        row.className = `thread-row ${threadRowClass(msg.sender_type)}`;
+
+        const bubble = document.createElement('div');
+        bubble.className = `thread-bubble ${threadBubbleClass(msg.sender_type)}`;
+        bubble.textContent = safeMessageBody(msg.body);
+
+        const time = document.createElement('span');
+        time.className = 'thread-time';
+        time.textContent = msg.created_at ? fmt.format(new Date(msg.created_at)) : '';
+
+        row.appendChild(bubble);
+        row.appendChild(time);
+        scroller.appendChild(row);
+      }
+      panelEl.appendChild(scroller);
+    }
+
+    async function toggleLeadHistory(params) {
+      const { leadId, businessId, callerPhone, panelEl, toggleEl } = params;
+
+      if (expandedLeadId && expandedLeadId !== leadId) {
+        const prev = leadThreadElements.get(expandedLeadId);
+        if (prev) {
+          prev.panel.classList.add('hidden');
+          prev.toggle.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      if (expandedLeadId === leadId) {
+        panelEl.classList.add('hidden');
+        toggleEl.setAttribute('aria-expanded', 'false');
+        expandedLeadId = null;
+        return;
+      }
+
+      expandedLeadId = leadId;
+      panelEl.classList.remove('hidden');
+      toggleEl.setAttribute('aria-expanded', 'true');
+      leadThreadElements.set(leadId, { panel: panelEl, toggle: toggleEl });
+
+      const cached = leadThreadCache.get(leadId);
+      if (cached) {
+        renderThreadPanel(panelEl, cached);
+        return;
+      }
+
+      renderThreadPanel(panelEl, { state: 'loading', messages: [] });
+      try {
+        const result = await fetchLeadConversationHistory(businessId, callerPhone);
+        leadThreadCache.set(leadId, result);
+        if (expandedLeadId === leadId) {
+          renderThreadPanel(panelEl, result);
+        }
+      } catch (err) {
+        console.error('[portal] conversation history fetch failed', err);
+        const failed = { state: 'error', messages: [] };
+        leadThreadCache.set(leadId, failed);
+        if (expandedLeadId === leadId) {
+          renderThreadPanel(panelEl, failed);
+        }
+      }
+    }
+
     $('f-message').addEventListener('input', updatePreview);
 
     $('btn-reset-template').addEventListener('click', () => {
@@ -504,6 +771,8 @@
     });
 
     async function loadLeads(businessId) {
+      expandedLeadId = null;
+      leadThreadElements.clear();
       const { data, error } = await supabase
         .from('leads')
         .select('id, caller_phone, status, created_at, booked_at')
@@ -525,6 +794,12 @@
       for (const row of data) {
         const li = document.createElement('li');
         li.className = 'lead-row';
+        const top = document.createElement('div');
+        top.className = 'lead-row-top';
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'lead-expand-btn';
+        toggle.setAttribute('aria-expanded', 'false');
         const meta = document.createElement('div');
         meta.className = 'lead-meta';
         const phone = document.createElement('span');
@@ -536,13 +811,18 @@
         meta.appendChild(phone);
         meta.appendChild(dt);
         const right = document.createElement('div');
-        right.style.display = 'flex';
-        right.style.alignItems = 'center';
-        right.style.gap = '0.5rem';
+        right.className = 'lead-right';
         const badge = document.createElement('span');
         badge.className = 'badge' + (row.status === 'booked' ? ' badge-booked' : '');
         badge.textContent = row.status === 'booked' ? 'Booked' : 'New';
+        const chev = document.createElement('span');
+        chev.className = 'lead-chevron';
+        chev.textContent = '▾';
         right.appendChild(badge);
+        right.appendChild(chev);
+        toggle.appendChild(meta);
+        toggle.appendChild(right);
+        top.appendChild(toggle);
         if (row.status === 'new') {
           const btn = document.createElement('button');
           btn.type = 'button';
@@ -558,10 +838,23 @@
             if (upErr) console.error(upErr);
             await loadLeads(businessId);
           });
-          right.appendChild(btn);
+          top.appendChild(btn);
         }
-        li.appendChild(meta);
-        li.appendChild(right);
+        const panel = document.createElement('div');
+        panel.className = 'lead-thread hidden';
+        renderThreadPanel(panel, { state: 'empty', messages: [] });
+        toggle.addEventListener('click', () => {
+          void toggleLeadHistory({
+            leadId: row.id,
+            businessId,
+            callerPhone: row.caller_phone,
+            panelEl: panel,
+            toggleEl: toggle,
+          });
+        });
+
+        li.appendChild(top);
+        li.appendChild(panel);
         ul.appendChild(li);
       }
     }
