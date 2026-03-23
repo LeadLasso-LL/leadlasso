@@ -2,7 +2,7 @@
  * POST /webhooks/incoming-call
  *
  * Normal flow: customer calls the LeadLasso number → identify business by To (leadlasso_number).
- * replace_number: TwiML Dial owner_phone.
+ * replace_number: TwiML Dial forward_to_phone (fallback owner_phone if unset — legacy rows).
  * forwarding: Reject so the forwarded leg ends; final status callback drives follow-up.
  *
  * Missed-call SMS, lead creation, and owner alert run ONLY from the final Twilio voice status
@@ -46,12 +46,22 @@ function escapeXmlText(s: string): string {
 }
 
 /**
- * replace_number: ring owner on Dial leg with Twilio AMD so AnsweredBy is populated on status callbacks.
+ * replace_number: ring this destination on Dial leg with Twilio AMD so AnsweredBy is populated on status callbacks.
  * @see https://www.twilio.com/docs/voice/twiml/number#machine-detection
  */
-function buildDialTwiml(ownerPhone: string): string {
-  const num = escapeXmlText(normalizePhone(ownerPhone));
+function buildDialTwiml(dialDestination: string): string {
+  const num = escapeXmlText(normalizePhone(dialDestination));
   return `<?xml version="1.0" encoding="UTF-8"?><Response><Dial timeout="20"><Number machineDetection="Enable">${num}</Number></Dial></Response>`;
+}
+
+/**
+ * Where inbound calls are routed for replace_number accounts.
+ * forward_to_phone when set; otherwise owner_phone (legacy / single-field rows).
+ */
+function getReplaceNumberDialDestination(business: BusinessRow): string {
+  const ft = business.forward_to_phone?.trim();
+  if (ft) return normalizePhone(ft);
+  return normalizePhone(business.owner_phone);
 }
 
 /** Route status posts that should run the voice URL handler (legacy: statusCallback === voice URL). */
@@ -66,7 +76,7 @@ const STATUS_ROUTED_TO_VOICE_URL = new Set([
 function shouldSendImmediateMissedCallOwnerAlert(business: BusinessRow): boolean {
   const owner = normalizePhone(business.owner_phone);
   if (business.setup_type === 'replace_number') {
-    const ringDest = normalizePhone(business.owner_phone);
+    const ringDest = getReplaceNumberDialDestination(business);
     return owner !== ringDest;
   }
   if (business.setup_type === 'forwarding') {
@@ -160,7 +170,14 @@ export async function handleIncomingCallStatusCallback(req: Request, res: Respon
 
   const fromNormalized = normalizePhone(from);
   const ownerNormalized = normalizePhone(business.owner_phone);
-  if (fromNormalized === ownerNormalized) {
+  const dialDestNormalized =
+    business.setup_type === 'replace_number'
+      ? getReplaceNumberDialDestination(business)
+      : null;
+  if (
+    fromNormalized === ownerNormalized ||
+    (dialDestNormalized != null && fromNormalized === dialDestNormalized)
+  ) {
     console.log('[call] Owner call ignored');
     res.status(200).end();
     return;
@@ -285,9 +302,10 @@ export async function handleIncomingCall(req: Request, res: Response): Promise<v
   }
 
   if (business.setup_type === 'replace_number') {
+    const dialTo = getReplaceNumberDialDestination(business);
     console.log('[call] Replace number mode: dialing destination phone');
-    console.log('[call] TwiML: Dial to owner with AMD enabled (Number machineDetection=Enable)');
-    res.type('text/xml').status(200).send(buildDialTwiml(business.owner_phone));
+    console.log('[call] TwiML: Dial to forward_to_phone (fallback owner_phone) with AMD enabled');
+    res.type('text/xml').status(200).send(buildDialTwiml(dialTo));
     return;
   }
 
