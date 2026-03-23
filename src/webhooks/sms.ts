@@ -23,6 +23,7 @@ import {
 } from '../services/conversation';
 import { sendCustomerSms, sendSms } from '../services/sms';
 import { isOwnerCustomerReplyAlertsEnabled } from '../services/owner-alerts';
+import { supabase } from '../lib/supabase';
 
 function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
@@ -34,12 +35,80 @@ function normalizePhone(phone: string): string {
 const EMPTY_RESPONSE =
   '<?xml version="1.0" encoding="UTF-8"?><Response></Response>';
 
+const STOP_KEYWORDS = new Set(['STOP', 'STOPALL', 'UNSUBSCRIBE', 'END', 'QUIT', 'CANCEL', 'REVOKE', 'OPTOUT']);
+const START_KEYWORDS = new Set(['START', 'UNSTOP']);
+const HELP_KEYWORDS = new Set(['HELP', 'INFO']);
+
+type ConsentEventKind = 'optout' | 'optin' | 'help';
+type ConsentEventSource = 'twilio_optouttype' | 'message_body_parse';
+
+function normalizeOptKeyword(input: string): string {
+  // Collapse whitespace/punctuation so "STOP ALL" => "STOPALL", "OPTOUT" => "OPTOUT", etc.
+  return input.trim().toUpperCase().replace(/[^A-Z]/g, '');
+}
+
+function detectConsentEvent(opts: { optOutType?: unknown; body?: unknown }): { kind: ConsentEventKind; keyword: string; source: ConsentEventSource } | null {
+  const optOutTypeRaw = typeof opts.optOutType === 'string' ? opts.optOutType : '';
+  if (optOutTypeRaw.trim()) {
+    const k = normalizeOptKeyword(optOutTypeRaw);
+    if (STOP_KEYWORDS.has(k)) return { kind: 'optout', keyword: k, source: 'twilio_optouttype' };
+    if (START_KEYWORDS.has(k)) return { kind: 'optin', keyword: k, source: 'twilio_optouttype' };
+    if (HELP_KEYWORDS.has(k)) return { kind: 'help', keyword: k, source: 'twilio_optouttype' };
+  }
+
+  const bodyRaw = typeof opts.body === 'string' ? opts.body : '';
+  if (!bodyRaw.trim()) return null;
+  const k = normalizeOptKeyword(bodyRaw);
+  if (STOP_KEYWORDS.has(k)) return { kind: 'optout', keyword: k, source: 'message_body_parse' };
+  if (START_KEYWORDS.has(k)) return { kind: 'optin', keyword: k, source: 'message_body_parse' };
+  if (HELP_KEYWORDS.has(k)) return { kind: 'help', keyword: k, source: 'message_body_parse' };
+  return null;
+}
+
+async function upsertCustomerConsent(params: {
+  customerPhoneE164: string;
+  kind: 'optout' | 'optin';
+  keyword: string;
+  source: ConsentEventSource;
+}): Promise<void> {
+  const now = new Date().toISOString();
+  const payload =
+    params.kind === 'optout'
+      ? {
+          customer_phone: params.customerPhoneE164,
+          sms_consent_status: 'unsubscribed',
+          opted_out_at: now,
+          opted_in_at: null,
+          last_opt_keyword: params.keyword,
+          last_opt_event_source: params.source,
+          updated_at: now,
+        }
+      : {
+          customer_phone: params.customerPhoneE164,
+          sms_consent_status: 'subscribed',
+          opted_out_at: null,
+          opted_in_at: now,
+          last_opt_keyword: params.keyword,
+          last_opt_event_source: params.source,
+          updated_at: now,
+        };
+
+  const { error } = await supabase
+    .from('outbound_customer_sms')
+    .upsert(payload, { onConflict: 'customer_phone' });
+
+  if (error) {
+    console.error('[sms][consent] upsert failed', error);
+  }
+}
+
 export async function handleIncomingSms(req: Request, res: Response): Promise<void> {
   try {
     console.log('[sms] Webhook received');
     const to = req.body.To as string;
     const from = req.body.From as string;
     const body = (req.body.Body || '').trim();
+    const optOutType = req.body.OptOutType as string | undefined;
     console.log('[sms] From:', from);
     console.log('[sms] To:', to);
     console.log('[sms] Body:', body);
@@ -84,6 +153,52 @@ export async function handleIncomingSms(req: Request, res: Response): Promise<vo
       });
       res.type('text/xml').status(200).send(EMPTY_RESPONSE);
       return;
+    }
+
+    // Customer opt-out/opt-in/help handling (do not route into conversation workflow).
+    const consentEvent = detectConsentEvent({ optOutType, body });
+    if (consentEvent) {
+      if (consentEvent.kind === 'help') {
+        console.log('[sms][consent] HELP received — no state change', {
+          customer: fromNormalized,
+          source: consentEvent.source,
+          keyword: consentEvent.keyword,
+        });
+        res.type('text/xml').status(200).send(EMPTY_RESPONSE);
+        return;
+      }
+
+      if (consentEvent.kind === 'optout') {
+        await upsertCustomerConsent({
+          customerPhoneE164: fromNormalized,
+          kind: 'optout',
+          keyword: consentEvent.keyword,
+          source: consentEvent.source,
+        });
+        console.log('[sms][consent] STOP received — unsubscribed customer', {
+          customer: fromNormalized,
+          source: consentEvent.source,
+          keyword: consentEvent.keyword,
+        });
+        res.type('text/xml').status(200).send(EMPTY_RESPONSE);
+        return;
+      }
+
+      if (consentEvent.kind === 'optin') {
+        await upsertCustomerConsent({
+          customerPhoneE164: fromNormalized,
+          kind: 'optin',
+          keyword: consentEvent.keyword,
+          source: consentEvent.source,
+        });
+        console.log('[sms][consent] START received — subscribed customer', {
+          customer: fromNormalized,
+          source: consentEvent.source,
+          keyword: consentEvent.keyword,
+        });
+        res.type('text/xml').status(200).send(EMPTY_RESPONSE);
+        return;
+      }
     }
 
     // Customer messaging: find or create conversation, forward to owner with 4-char code.

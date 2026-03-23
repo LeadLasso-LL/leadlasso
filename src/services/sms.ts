@@ -23,11 +23,33 @@ export async function sendSms(params: {
 
 const OPT_OUT_TEXT = 'Reply STOP to opt out.';
 
+type SmsConsentStatus = 'subscribed' | 'unsubscribed' | 'unknown';
+
 function toE164(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   if (digits.length === 10 && !phone.startsWith('+')) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
   return phone.startsWith('+') ? phone : `+${phone}`;
+}
+
+async function getCustomerSmsConsentStatus(customerPhone: string): Promise<SmsConsentStatus> {
+  const customerE164 = toE164(customerPhone);
+  try {
+    const { data, error } = await supabase
+      .from('outbound_customer_sms')
+      .select('sms_consent_status')
+      .eq('customer_phone', customerE164)
+      .maybeSingle();
+    if (error) {
+      console.error('[sms][consent] lookup failed', error);
+      return 'subscribed';
+    }
+    const status = (data?.sms_consent_status as SmsConsentStatus | null | undefined) ?? 'subscribed';
+    return status === 'unsubscribed' ? 'unsubscribed' : status === 'unknown' ? 'unknown' : 'subscribed';
+  } catch (err) {
+    console.error('[sms][consent] unexpected lookup error', err);
+    return 'subscribed';
+  }
 }
 
 async function hasSentAnyOutboundToCustomer(customerPhone: string): Promise<boolean> {
@@ -36,6 +58,7 @@ async function hasSentAnyOutboundToCustomer(customerPhone: string): Promise<bool
     .from('outbound_customer_sms')
     .select('id')
     .eq('customer_phone', customerE164)
+    .eq('has_sent_any_outbound', true)
     .maybeSingle();
   return !!data;
 }
@@ -43,7 +66,10 @@ async function hasSentAnyOutboundToCustomer(customerPhone: string): Promise<bool
 async function markOutboundSentToCustomer(customerPhone: string): Promise<void> {
   const customerE164 = toE164(customerPhone);
   try {
-    await supabase.from('outbound_customer_sms').insert({ customer_phone: customerE164 });
+    // Only flips the "has ever sent" bit. Do not overwrite sms_consent_status here.
+    await supabase
+      .from('outbound_customer_sms')
+      .upsert({ customer_phone: customerE164, has_sent_any_outbound: true }, { onConflict: 'customer_phone' });
   } catch (err) {
     // Best-effort: if the row already exists due to concurrency, we can safely ignore.
   }
@@ -62,6 +88,12 @@ export async function sendCustomerSms(params: {
   to: string;
   body: string;
 }): Promise<{ sid: string }> {
+  const consent = await getCustomerSmsConsentStatus(params.to);
+  if (consent === 'unsubscribed') {
+    console.log('[sms][consent] suppressed outbound customer SMS — opted out', { to: params.to });
+    return { sid: 'suppressed_optout' };
+  }
+
   const alreadySent = await hasSentAnyOutboundToCustomer(params.to);
 
   const bodyAlreadyHasOptOut = params.body.includes(OPT_OUT_TEXT);
