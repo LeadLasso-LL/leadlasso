@@ -411,16 +411,20 @@
       sendResetBtn.disabled = true;
       sendResetBtn.textContent = 'Sending…';
       try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: PASSWORD_RESET_REDIRECT_TO,
+        const resp = await fetch('/auth/request-password-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, redirectTo: PASSWORD_RESET_REDIRECT_TO }),
         });
-        if (error) {
-          resetErrorEl.textContent = error.message || 'Could not send reset email. Try again.';
+        const data = await resp.json().catch(function () { return {}; });
+        if (!resp.ok) {
+          resetErrorEl.textContent = data.error || 'Could not send reset email. Try again.';
           resetErrorEl.classList.remove('hidden');
-        } else {
-          resetFormBlock.classList.add('hidden');
-          resetSuccessEl.classList.remove('hidden');
+          return;
         }
+
+        resetFormBlock.classList.add('hidden');
+        resetSuccessEl.classList.remove('hidden');
       } catch (err) {
         resetErrorEl.textContent = 'Something went wrong. Try again.';
         resetErrorEl.classList.remove('hidden');

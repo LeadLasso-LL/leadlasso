@@ -24,6 +24,12 @@ export type SendWelcomeEmailParams = {
 };
 
 const WELCOME_SUBJECT = "You're live - Your LeadLasso number is ready";
+const PASSWORD_RESET_SUBJECT = 'Reset your LeadLasso password';
+
+type SendPasswordResetEmailParams = {
+  email: string;
+  actionLink: string;
+};
 
 function escapeHtml(s: string): string {
   return s
@@ -219,4 +225,115 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
   } catch (err) {
     console.error('[email] failed', err);
   }
+}
+
+function buildPasswordResetHtml(actionLink: string): string {
+  const link = escapeHtmlAttr(actionLink);
+  const prettyLink = escapeHtml(actionLink);
+
+  const primary = '#e13c3c';
+  const secondary = '#db7676';
+
+  // Table-based layout for broad email client support.
+  return [
+    '<!DOCTYPE html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="UTF-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+    '<title>Reset your LeadLasso password</title>',
+    '<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">',
+    '</head>',
+    '<body style="margin:0;padding:0;background: linear-gradient(180deg, ' +
+      primary +
+      ' 0%, ' +
+      secondary +
+      ' 100%);background-color:' +
+      primary +
+      ';font-family:Inter,Arial,sans-serif;color:#ffffff;">',
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">',
+    '<tr>',
+    '<td align="center" style="padding:48px 16px;">',
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border-collapse:collapse;">',
+    '<tr>',
+    '<td style="text-align:center;padding:0 8px;">',
+    '<h1 style="margin:0 0 10px 0;font-family:Poppins,Arial,sans-serif;font-size:28px;line-height:1.2;font-weight:700;color:#ffffff;">Reset your password</h1>',
+    '<p style="margin:0 0 22px 0;font-family:Inter,Arial,sans-serif;font-size:15px;line-height:1.6;font-weight:400;opacity:0.92;">Click below to set a new password for your LeadLasso account.</p>',
+    '</td>',
+    '</tr>',
+    '<tr>',
+    '<td align="center" style="padding:0 8px 8px 8px;">',
+    '<table role="presentation" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">',
+    '<tr>',
+    '<td align="center" bgcolor="#ffffff" style="border-radius:12px;">',
+    '<a href="' +
+      link +
+      '" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 26px;font-family:Inter,Arial,sans-serif;font-size:15px;font-weight:600;line-height:1.4;color:' +
+      primary +
+      ';text-decoration:none;border-radius:12px;">Reset Password</a>',
+    '</td>',
+    '</tr>',
+    '</table>',
+    '</td>',
+    '</tr>',
+    '<tr>',
+    '<td align="center" style="padding:8px 8px 0 8px;">',
+    '<p style="margin:10px 0 0 0;font-size:13px;line-height:1.45;color:#ffffff;opacity:0.95;">',
+    '<a href="' + link + '" target="_blank" rel="noopener noreferrer" style="color:#ffffff;text-decoration:underline;word-break:break-all;">' +
+      prettyLink +
+      '</a>',
+    '</p>',
+    '</td>',
+    '</tr>',
+    '<tr>',
+    '<td style="padding:26px 8px 0 8px;text-align:center;">',
+    '<p style="margin:0;font-size:12px;line-height:1.5;color:#ffffff;opacity:0.9;">If you didn’t request this, you can safely ignore this email.</p>',
+    '</td>',
+    '</tr>',
+    '</table>',
+    '</td>',
+    '</tr>',
+    '</table>',
+    '</body>',
+    '</html>',
+  ].join('');
+}
+
+function buildPasswordResetText(params: SendPasswordResetEmailParams): string {
+  return [
+    'Reset your LeadLasso password',
+    '',
+    'Click this link to set a new password:',
+    params.actionLink,
+    '',
+    "If you didn't request this, you can safely ignore this email.",
+  ].join('\n');
+}
+
+export async function sendPasswordResetEmail(params: SendPasswordResetEmailParams): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.FROM_EMAIL || 'LeadLasso <setup@getleadlasso.io>';
+  if (!apiKey || !fromEmail) {
+    console.log('[email] skipped — provider not configured');
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const html = buildPasswordResetHtml(params.actionLink);
+  const text = buildPasswordResetText(params);
+
+  const { error } = await resend.emails.send({
+    from: fromEmail,
+    to: [params.email],
+    subject: PASSWORD_RESET_SUBJECT,
+    html,
+    text,
+  });
+
+  if (error) {
+    console.error('[email] password reset failed', error);
+    return;
+  }
+
+  console.log('[email] password reset success');
 }
