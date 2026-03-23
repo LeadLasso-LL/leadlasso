@@ -229,7 +229,6 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
 
 function buildPasswordResetHtml(actionLink: string): string {
   const link = escapeHtmlAttr(actionLink);
-  const prettyLink = escapeHtml(actionLink);
 
   const primary = '#e13c3c';
   const secondary = '#db7676';
@@ -277,15 +276,6 @@ function buildPasswordResetHtml(actionLink: string): string {
     '</td>',
     '</tr>',
     '<tr>',
-    '<td align="center" style="padding:8px 8px 0 8px;">',
-    '<p style="margin:10px 0 0 0;font-size:13px;line-height:1.45;color:#ffffff;opacity:0.95;">',
-    '<a href="' + link + '" target="_blank" rel="noopener noreferrer" style="color:#ffffff;text-decoration:underline;word-break:break-all;">' +
-      prettyLink +
-      '</a>',
-    '</p>',
-    '</td>',
-    '</tr>',
-    '<tr>',
     '<td style="padding:26px 8px 0 8px;text-align:center;">',
     '<p style="margin:0;font-size:12px;line-height:1.5;color:#ffffff;opacity:0.9;">If you didn’t request this, you can safely ignore this email.</p>',
     '</td>',
@@ -303,8 +293,7 @@ function buildPasswordResetText(params: SendPasswordResetEmailParams): string {
   return [
     'Reset your LeadLasso password',
     '',
-    'Click this link to set a new password:',
-    params.actionLink,
+    'Click the "Reset Password" button in this email to set a new password.',
     '',
     "If you didn't request this, you can safely ignore this email.",
   ].join('\n');
