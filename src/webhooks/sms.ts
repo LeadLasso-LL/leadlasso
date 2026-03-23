@@ -24,6 +24,7 @@ import {
 import { sendCustomerSms, sendSms } from '../services/sms';
 import { isOwnerCustomerReplyAlertsEnabled } from '../services/owner-alerts';
 import { supabase } from '../lib/supabase';
+import { persistConversationMessage } from '../services/message-history';
 
 function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
@@ -150,6 +151,11 @@ export async function handleIncomingSms(req: Request, res: Response): Promise<vo
         from: business.leadlasso_number!,
         to: conversation.customer_phone,
         body: bodyWithoutCode,
+        messageMeta: {
+          conversationId: conversation.id,
+          businessId: conversation.business_id,
+          senderType: 'owner',
+        },
       });
       res.type('text/xml').status(200).send(EMPTY_RESPONSE);
       return;
@@ -204,6 +210,15 @@ export async function handleIncomingSms(req: Request, res: Response): Promise<vo
     // Customer messaging: find or create conversation, forward to owner with 4-char code.
     const { conversation, created } = await findOrCreateConversation(business, from);
     console.log('[sms] Conversation found or created');
+    await persistConversationMessage({
+      conversationId: conversation.id,
+      businessId: conversation.business_id,
+      customerPhone: conversation.customer_phone,
+      direction: 'inbound',
+      senderType: 'customer',
+      body,
+      channel: 'sms',
+    });
     const code = conversation.conversation_code ?? '';
     const primedFromMissedCall = conversation.requires_owner_reply_intro_on_next_sms === true;
     if (primedFromMissedCall) {

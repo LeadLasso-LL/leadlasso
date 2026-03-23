@@ -118,7 +118,7 @@ export async function generateUniqueConversationCode(): Promise<string> {
 export async function prepareConversationForMissedCall(
   business: BusinessRow,
   customerPhone: string
-): Promise<{ code: string } | null> {
+): Promise<{ id: string; code: string } | null> {
   const customerE164 = toE164(customerPhone);
   const leadlasso = business.leadlasso_number;
   if (!leadlasso) return null;
@@ -147,22 +147,26 @@ export async function prepareConversationForMissedCall(
       })
       .eq('id', existing.id);
     if (error) throw error;
-    return { code };
+    return { id: existing.id as string, code };
   }
 
   const conversation_code = await generateUniqueConversationCode();
-  const { error: insertError } = await supabase.from('conversations').insert({
-    business_id: business.id,
-    customer_phone: customerE164,
-    owner_phone: toE164(business.owner_phone),
-    leadlasso_number: leadlasso,
-    status: 'active',
-    conversation_code,
-    requires_owner_reply_intro_on_next_sms: true,
-    last_message_at: now,
-  });
+  const { data: inserted, error: insertError } = await supabase
+    .from('conversations')
+    .insert({
+      business_id: business.id,
+      customer_phone: customerE164,
+      owner_phone: toE164(business.owner_phone),
+      leadlasso_number: leadlasso,
+      status: 'active',
+      conversation_code,
+      requires_owner_reply_intro_on_next_sms: true,
+      last_message_at: now,
+    })
+    .select('id')
+    .single();
   if (insertError) throw insertError;
-  return { code: conversation_code };
+  return { id: String(inserted.id), code: conversation_code };
 }
 
 /** Conversation code for customer + business (e.g. retry owner alert after missed call). */

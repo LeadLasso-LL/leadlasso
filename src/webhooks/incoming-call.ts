@@ -14,6 +14,7 @@ import { Request, Response } from 'express';
 import type { BusinessRow } from '../lib/supabase';
 import { findBusinessByLeadlassoNumber, isBusinessActive } from '../services/business';
 import {
+  findOrCreateConversation,
   prepareConversationForMissedCall,
   getConversationCodeForBusinessCustomer,
 } from '../services/conversation';
@@ -215,12 +216,26 @@ export async function handleIncomingCallStatusCallback(req: Request, res: Respon
   }
 
   let prepCode: string | null = null;
+  let conversationIdForSystemOutbound: string | null = null;
   if (!leadRow.auto_reply_sent_at) {
     try {
       const prep = await prepareConversationForMissedCall(business, from);
       prepCode = prep?.code ?? null;
+      conversationIdForSystemOutbound = prep?.id ?? null;
     } catch (err) {
       console.error('[call] prepareConversationForMissedCall failed', err);
+    }
+
+    if (!conversationIdForSystemOutbound) {
+      try {
+        const resolved = await findOrCreateConversation(business, from);
+        conversationIdForSystemOutbound = resolved.conversation.id;
+        if (!prepCode) {
+          prepCode = resolved.conversation.conversation_code ?? null;
+        }
+      } catch (err) {
+        console.error('[call] findOrCreateConversation fallback failed', err);
+      }
     }
 
     try {
@@ -228,6 +243,14 @@ export async function handleIncomingCallStatusCallback(req: Request, res: Respon
         from: business.leadlasso_number,
         to: from,
         body: replyText,
+        messageMeta:
+          conversationIdForSystemOutbound != null
+            ? {
+                conversationId: conversationIdForSystemOutbound,
+                businessId: business.id,
+                senderType: 'system',
+              }
+            : undefined,
       });
       await markLeadAutoReplySent(leadRow.id);
       console.log('[call] follow-up SMS sent');

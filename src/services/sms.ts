@@ -4,6 +4,7 @@
  */
 import { twilioClient } from '../lib/twilio';
 import { supabase } from '../lib/supabase';
+import { persistConversationMessage, type MessageSenderType } from './message-history';
 
 /**
  * Send one SMS. Caller is responsible for storing message in DB if needed (e.g. when we add messages table).
@@ -87,6 +88,11 @@ export async function sendCustomerSms(params: {
   from: string;
   to: string;
   body: string;
+  messageMeta?: {
+    conversationId: string;
+    businessId: string;
+    senderType: MessageSenderType;
+  };
 }): Promise<{ sid: string }> {
   const consent = await getCustomerSmsConsentStatus(params.to);
   if (consent === 'unsubscribed') {
@@ -103,6 +109,18 @@ export async function sendCustomerSms(params: {
   const bodyToSend = shouldAppendOptOut ? params.body + separator + OPT_OUT_TEXT : params.body;
 
   const result = await sendSms({ from: params.from, to: params.to, body: bodyToSend });
+
+  if (params.messageMeta) {
+    await persistConversationMessage({
+      conversationId: params.messageMeta.conversationId,
+      businessId: params.messageMeta.businessId,
+      customerPhone: toE164(params.to),
+      direction: 'outbound',
+      senderType: params.messageMeta.senderType,
+      body: bodyToSend,
+      channel: 'sms',
+    });
+  }
 
   if (!alreadySent) {
     // Mark only after successful send so we don't "steal" the first-message slot from retries.

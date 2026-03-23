@@ -57,6 +57,11 @@ export async function handleOwnerReply(req: Request, res: Response): Promise<voi
       from: business.leadlasso_number,
       to: conversation.customer_phone,
       body: bodyWithoutCode,
+      messageMeta: {
+        conversationId: conversation.id,
+        businessId: conversation.business_id,
+        senderType: 'owner',
+      },
     });
 
     res.status(200).end();
