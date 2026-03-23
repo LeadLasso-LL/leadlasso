@@ -94,6 +94,19 @@
     .field-helper + .field-helper {
       margin-top: 0.25rem;
     }
+    /* SMS consent under Personal Phone: supporting copy, subtler than .field-helper */
+    .field-helper-sms-disclosure {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.62);
+      margin-top: 0.375rem;
+      line-height: 1.45;
+      font-weight: 400;
+    }
+    .field-helper-sms-disclosure a {
+      color: rgba(255, 255, 255, 0.82);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
     input[type="text"],
     input[type="email"],
     input[type="tel"],
@@ -476,7 +489,7 @@
           <label class="field-label" for="personal_phone">Personal Phone</label>
           <input type="tel" id="personal_phone" name="personal_phone" required placeholder="+1 (555) 000-0000">
           <p class="field-helper">The number that we'll route messages to when a lead responds. Manage your preferences in your admin portal.</p>
-          <div>
+          <div class="field-helper-sms-disclosure">
 By providing your mobile number, you agree to receive SMS messages from LeadLasso about your request. Message frequency varies. Message & data rates may apply. Reply STOP to opt out, HELP for help. View 
 <a href="https://privacy.getleadlasso.io/" target="_blank">Privacy Policy</a> 
 and 
