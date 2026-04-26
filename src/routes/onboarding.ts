@@ -22,11 +22,24 @@ export type OnboardingBody = {
   email?: string;
   sender_name?: string;
   owner_phone?: string;
+  /** Optional: owner consent to receive LeadLasso owner alerts via SMS (missed calls, customer replies, account alerts). */
+  owner_sms_consent?: boolean | string;
   forward_to_phone?: string;
   setup_type?: string;
   auto_reply_template?: string | null;
   preferred_area_code?: string;
 };
+
+function parseOwnerSmsConsent(value: unknown): boolean | undefined {
+  if (value === true) return true;
+  if (value === false) return false;
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    if (v === 'true' || v === '1' || v === 'yes' || v === 'y' || v === 'on') return true;
+    if (v === 'false' || v === '0' || v === 'no' || v === 'n' || v === 'off') return false;
+  }
+  return undefined;
+}
 
 /**
  * Maps Stripe Checkout session.metadata (+ optional email from session) to onboarding body.
@@ -53,6 +66,7 @@ export function onboardingBodyFromCheckoutMetadata(
     sender_name: metadata.sender_name ? String(metadata.sender_name).trim() : undefined,
     email,
     owner_phone: String(metadata.owner_phone).trim(),
+    owner_sms_consent: metadata.owner_sms_consent != null ? String(metadata.owner_sms_consent).trim() : undefined,
     forward_to_phone:
       metadata.forward_to_phone && String(metadata.forward_to_phone).trim() !== ''
         ? String(metadata.forward_to_phone).trim()
@@ -114,6 +128,7 @@ export async function createBusinessWithNumber(
   const forward_to_phone = forward_to_phone_raw !== '' ? normalizePhone(forward_to_phone_raw) : null;
   const auto_reply_template = data.auto_reply_template != null ? String(data.auto_reply_template).trim() || null : null;
   const preferred_area_code = String(data.preferred_area_code).trim().replace(/\D/g, '').slice(0, 3);
+  const ownerSmsConsent = parseOwnerSmsConsent(data.owner_sms_consent);
 
   if (preferred_area_code.length !== 3) {
     throw new Error('preferred_area_code must be a valid 3-digit area code');
@@ -147,6 +162,17 @@ export async function createBusinessWithNumber(
       preferred_area_code,
       stripe_customer_id: stripeCustomerId,
       stripe_checkout_session_id: stripeCheckoutSessionId ?? null,
+      ...(ownerSmsConsent === false
+        ? {
+            owner_new_lead_alerts_enabled: false,
+            owner_customer_reply_alerts_enabled: false,
+          }
+        : ownerSmsConsent === true
+          ? {
+              owner_new_lead_alerts_enabled: true,
+              owner_customer_reply_alerts_enabled: true,
+            }
+          : {}),
     })
     .select('id, leadlasso_number')
     .single();
@@ -227,6 +253,7 @@ export async function handleOnboardingBusiness(req: Request, res: Response): Pro
         sender_name: body.sender_name != null ? String(body.sender_name).trim() : '',
         email: String(body.email).trim(),
         owner_phone: String(body.owner_phone).trim(),
+        owner_sms_consent: String(parseOwnerSmsConsent(body.owner_sms_consent) === true),
         forward_to_phone: (body.forward_to_phone != null && String(body.forward_to_phone).trim() !== '') ? String(body.forward_to_phone).trim() : '',
         preferred_area_code,
         setup_type: String(body.setup_type).trim(),

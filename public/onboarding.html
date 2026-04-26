@@ -492,6 +492,13 @@
           <label class="field-label" for="personal_phone">Personal Phone</label>
           <input type="tel" id="personal_phone" name="personal_phone" required placeholder="+1 (555) 000-0000">
           <p class="field-helper">The number that we'll route messages to when a lead responds. Manage your preferences in your admin portal.</p>
+          <label class="radio-option">
+            <input type="checkbox" id="owner_sms_consent" name="owner_sms_consent">
+            <div class="option-content">
+              <span>I agree to receive SMS messages from LeadLasso about missed call leads and customer replies.</span>
+              <p class="option-subtext">You can manage your text notification preferences in your LeadLasso Admin Portal at any time.</p>
+            </div>
+          </label>
           <div class="field-helper-sms-disclosure">
 By providing your mobile number, you agree to receive SMS messages from LeadLasso about your request. Message frequency varies. Message & data rates may apply. Reply STOP to opt out, HELP for help. View 
 <a href="https://privacy.getleadlasso.io/" target="_blank">Privacy Policy</a> 
@@ -731,6 +738,7 @@ Consent is not a condition of purchase.
       e.preventDefault();
       const setupType = document.querySelector('input[name="setup_type"]:checked')?.value;
       const personalPhone = document.getElementById('personal_phone').value.trim();
+      const ownerSmsConsent = !!document.getElementById('owner_sms_consent')?.checked;
       const ringNumber = document.getElementById('forward_to_phone').value.trim();
       const useDefaultMessage = document.querySelector('input[name="auto_reply_mode"]:checked')?.value === 'default';
 
@@ -743,6 +751,7 @@ Consent is not a condition of purchase.
         email: document.getElementById('email').value.trim(),
         sender_name: document.getElementById('first_name').value.trim(),
         owner_phone: owner_phone,
+        owner_sms_consent: ownerSmsConsent,
         forward_to_phone: forward_to_phone,
         preferred_area_code: document.getElementById('preferred_area_code').value.trim().replace(/\D/g, '').slice(0, 3),
         setup_type: setupType,
