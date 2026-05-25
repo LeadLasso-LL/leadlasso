@@ -1,6 +1,6 @@
 /**
  * Twilio client and webhook URL helper.
- * All LeadLasso numbers point to the same webhook URLs; the backend identifies
+ * All Juvo numbers point to the same webhook URLs; the backend identifies
  * the business by the Twilio number (To) that received the call or SMS.
  */
 import twilio from 'twilio';

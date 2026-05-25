@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Juvo — Every Call Answered. Every Lead Captured. Every Job Booked.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #1B5E3B;
+      --green-light: #2a7a50;
+      --green-dim: #164d30;
+      --white: #ffffff;
+      --off-white: #f7f7f5;
+      --charcoal: #1a1a1a;
+      --mid: #4a4a4a;
+      --border: #e2e2dc;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--white);
+      color: var(--charcoal);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5%;
+      height: 72px;
+      background: var(--green);
+    }
+
+    .nav-logo {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--white); }
+
+    .nav-cta {
+      background: var(--white) !important;
+      color: var(--green) !important;
+      padding: 0.55rem 1.4rem;
+      border-radius: 6px;
+      font-weight: 700 !important;
+      transition: opacity 0.2s !important;
+    }
+
+    .nav-cta:hover { opacity: 0.9; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 5% 80px;
+      position: relative;
+      background: var(--white);
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 900px; height: 900px;
+      background: radial-gradient(ellipse at center, rgba(27,94,59,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(27,94,59,0.08);
+      border: 1px solid rgba(27,94,59,0.2);
+      color: var(--green);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.4rem 1rem;
+      border-radius: 100px;
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.1s forwards;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+    }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(3.5rem, 8vw, 7.5rem);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+      color: var(--charcoal);
+      max-width: 900px;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.25s forwards;
+    }
+
+    h1 span {
+      color: var(--green);
+      display: block;
+    }
+
+    .hero-sub {
+      margin-top: 2rem;
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--mid);
+      font-weight: 400;
+      max-width: 520px;
+      line-height: 1.6;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.4s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.55s forwards;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: var(--white);
+      padding: 0.85rem 2.2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      transition: background 0.2s, transform 0.15s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: var(--green-light);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--charcoal);
+      padding: 0.85rem 2.2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1.5px solid var(--border);
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--green);
+      color: var(--green);
+      transform: translateY(-1px);
+    }
+
+    .hero-proof {
+      margin-top: 3.5rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.7s forwards;
+    }
+
+    .proof-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .proof-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem;
+      color: var(--green);
+      letter-spacing: 0.04em;
+    }
+
+    .proof-label {
+      font-size: 0.78rem;
+      color: var(--mid);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .proof-divider {
+      width: 1px;
+      height: 36px;
+      background: var(--border);
+    }
+
+    /* ── PROBLEM SECTION ── */
+    .problem {
+      background: var(--charcoal);
+      color: var(--white);
+      padding: 100px 5%;
+      text-align: center;
+    }
+
+    .problem h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      letter-spacing: 0.03em;
+      line-height: 1;
+      max-width: 800px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .problem h2 em {
+      color: var(--green);
+      font-style: normal;
+    }
+
+    .problem p {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.6);
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .problem-stats {
+      display: flex;
+      justify-content: center;
+      gap: 4rem;
+      margin-top: 4rem;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3.5rem;
+      color: var(--green);
+      letter-spacing: 0.04em;
+    }
+
+    .stat-desc {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.5);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-align: center;
+      max-width: 160px;
+      line-height: 1.4;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how {
+      padding: 120px 5%;
+      background: var(--off-white);
+    }
+
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 1rem;
+    }
+
+    .how h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.5rem, 4vw, 4rem);
+      letter-spacing: 0.03em;
+      max-width: 600px;
+      line-height: 1;
+      margin-bottom: 4rem;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 2px;
+    }
+
+    .step {
+      background: var(--white);
+      padding: 2.5rem;
+      position: relative;
+      transition: transform 0.2s;
+    }
+
+    .step:hover { transform: translateY(-4px); }
+
+    .step-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 4rem;
+      color: rgba(27,94,59,0.12);
+      line-height: 1;
+      margin-bottom: 1rem;
+      letter-spacing: 0.04em;
+    }
+
+    .step-icon {
+      width: 44px; height: 44px;
+      background: rgba(27,94,59,0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.2rem;
+      font-size: 1.3rem;
+    }
+
+    .step h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+      color: var(--charcoal);
+    }
+
+    .step p {
+      font-size: 0.92rem;
+      color: var(--mid);
+      line-height: 1.6;
+    }
+
+    /* ── FEATURES ── */
+    .features {
+      padding: 120px 5%;
+      background: var(--white);
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: 5rem;
+    }
+
+    .features-header h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.5rem, 4vw, 4rem);
+      letter-spacing: 0.03em;
+      line-height: 1;
+    }
+
+    .features-header p {
+      margin-top: 1rem;
+      font-size: 1.05rem;
+      color: var(--mid);
+      max-width: 460px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--green);
+      transform: translateY(-3px);
+    }
+
+    .feature-card.featured {
+      background: var(--green);
+      border-color: var(--green);
+      color: var(--white);
+    }
+
+    .feature-icon {
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card.featured h3 { color: var(--white); }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--mid);
+      line-height: 1.6;
+    }
+
+    .feature-card.featured p { color: rgba(255,255,255,0.75); }
+
+    /* ── PRICING ── */
+    .pricing {
+      padding: 120px 5%;
+      background: var(--off-white);
+      text-align: center;
+    }
+
+    .pricing h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.5rem, 4vw, 4rem);
+      letter-spacing: 0.03em;
+      margin-bottom: 1rem;
+    }
+
+    .pricing > p {
+      color: var(--mid);
+      font-size: 1.05rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .pricing-cards {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 2.5rem;
+      flex: 1;
+      min-width: 260px;
+      max-width: 340px;
+      text-align: left;
+      transition: transform 0.2s;
+    }
+
+    .pricing-card:hover { transform: translateY(-4px); }
+
+    .pricing-card.popular {
+      border-color: var(--green);
+      position: relative;
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: -13px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--green);
+      color: var(--white);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.3rem 1rem;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    .plan-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 0.75rem;
+    }
+
+    .plan-price {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3rem;
+      letter-spacing: 0.04em;
+      color: var(--charcoal);
+      line-height: 1;
+    }
+
+    .plan-price span {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--mid);
+    }
+
+    .plan-desc {
+      font-size: 0.88rem;
+      color: var(--mid);
+      margin: 0.75rem 0 1.5rem;
+      line-height: 1.5;
+    }
+
+    .plan-features {
+      list-style: none;
+      margin-bottom: 2rem;
+    }
+
+    .plan-features li {
+      font-size: 0.9rem;
+      color: var(--charcoal);
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .plan-features li::before {
+      content: '✓';
+      color: var(--green);
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .plan-btn {
+      display: block;
+      text-align: center;
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .plan-btn-outline {
+      border: 1.5px solid var(--border);
+      color: var(--charcoal);
+    }
+
+    .plan-btn-outline:hover { border-color: var(--green); color: var(--green); }
+
+    .plan-btn-solid {
+      background: var(--green);
+      color: var(--white);
+      border: 1.5px solid var(--green);
+    }
+
+    .plan-btn-solid:hover { background: var(--green-light); }
+
+    /* ── CTA BANNER ── */
+    .cta-banner {
+      background: var(--green);
+      padding: 100px 5%;
+      text-align: center;
+    }
+
+    .cta-banner h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.8rem, 5vw, 5rem);
+      color: var(--white);
+      letter-spacing: 0.03em;
+      line-height: 1;
+      margin-bottom: 1.5rem;
+    }
+
+    .cta-banner p {
+      color: rgba(255,255,255,0.75);
+      font-size: 1.1rem;
+      max-width: 460px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+    }
+
+    .btn-white {
+      background: var(--white);
+      color: var(--green);
+      padding: 0.9rem 2.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-white:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--charcoal);
+      color: rgba(255,255,255,0.45);
+      padding: 3rem 5%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      color: var(--white);
+      letter-spacing: 0.08em;
+    }
+
+    footer p { font-size: 0.82rem; }
+
+    footer a {
+      color: rgba(255,255,255,0.45);
+      text-decoration: none;
+      font-size: 0.82rem;
+      transition: color 0.2s;
+    }
+
+    footer a:hover { color: var(--white); }
+
+    .footer-links { display: flex; gap: 1.5rem; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hero-proof { gap: 1.2rem; }
+      .proof-divider { display: none; }
+      .problem-stats { gap: 2rem; }
+      footer { flex-direction: column; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo"><img src="data:image/png;base64,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" alt="Juvo" style="height:44px; display:block;"/></a>
+    <ul class="nav-links">
+      <li><a href="#how">How It Works</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#" class="nav-cta">Get Started</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">AI Receptionist for Service Businesses</div>
+    <h1>
+      Every Call Answered.<br/>
+      <span>Every Lead Captured.</span>
+      Every Job Booked.
+    </h1>
+    <p class="hero-sub">
+      Juvo runs your front office 24/7 — answering calls, capturing leads, and booking jobs automatically. So you can focus on the work.
+    </p>
+    <div class="hero-actions">
+      <a href="#" class="btn-primary">Start Free Trial</a>
+      <a href="#how" class="btn-secondary">See How It Works</a>
+    </div>
+    <div class="hero-proof">
+      <div class="proof-item">
+        <span class="proof-number">24/7</span>
+        <span class="proof-label">Always On</span>
+      </div>
+      <div class="proof-divider"></div>
+      <div class="proof-item">
+        <span class="proof-number">85%</span>
+        <span class="proof-label">Leads Never Call Back</span>
+      </div>
+      <div class="proof-divider"></div>
+      <div class="proof-item">
+        <span class="proof-number">2 Min</span>
+        <span class="proof-label">Setup Time</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM -->
+  <section class="problem">
+    <h2 reveal>Every missed call is a <em>job your competitor booked.</em></h2>
+    <p>Most service businesses lose leads not because they're bad at their trade — but because no one picked up the phone.</p>
+    <div class="problem-stats">
+      <div class="stat reveal">
+        <span class="stat-num">85%</span>
+        <span class="stat-desc">of callers won't leave a voicemail</span>
+      </div>
+      <div class="stat reveal">
+        <span class="stat-num">62%</span>
+        <span class="stat-desc">call a competitor if you don't answer</span>
+      </div>
+      <div class="stat reveal">
+        <span class="stat-num">$0</span>
+        <span class="stat-desc">revenue from a lead you never capture</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how">
+    <p class="section-label reveal">How It Works</p>
+    <h2 class="reveal">Set it up once.<br/>Let Juvo do the rest.</h2>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <div class="step-icon">📞</div>
+        <h3>Customer Calls</h3>
+        <p>A potential customer calls your business. Whether you're on a job, in a meeting, or asleep — Juvo picks up.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">02</div>
+        <div class="step-icon">🤖</div>
+        <h3>AI Answers Instantly</h3>
+        <p>Juvo's AI receptionist greets them by your business name, answers questions, and qualifies the lead in real time.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">03</div>
+        <div class="step-icon">📅</div>
+        <h3>Job Gets Booked</h3>
+        <p>Juvo captures their info and books the appointment directly to your calendar — no back and forth required.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">04</div>
+        <div class="step-icon">📊</div>
+        <h3>You Stay in Control</h3>
+        <p>Every lead, call, and conversation lives in your Juvo dashboard. Review, reply, or follow up anytime.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="features-header reveal">
+      <p class="section-label">Features</p>
+      <h2>Everything you need.<br/>Nothing you don't.</h2>
+      <p>Built specifically for contractors, plumbers, HVAC techs, and home service businesses.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card featured reveal">
+        <div class="feature-icon">🎙️</div>
+        <h3>AI Voice Receptionist</h3>
+        <p>A real-sounding AI that answers every call, qualifies leads, and books jobs — 24 hours a day, 7 days a week.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">💬</div>
+        <h3>Website Chat Widget</h3>
+        <p>Capture leads from your website with an AI chat that qualifies visitors and collects their contact info automatically.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📱</div>
+        <h3>SMS Follow-Up</h3>
+        <p>Automated text follow-ups keep leads warm and move them toward a booking without you lifting a finger.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📅</div>
+        <h3>Calendar Booking</h3>
+        <p>Juvo books jobs directly to your calendar. No double-booking, no phone tag, no missed appointments.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📊</div>
+        <h3>Lead Dashboard</h3>
+        <p>Every call, chat, and lead in one clean dashboard. See what's pending, what's booked, and what needs your attention.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">⚡</div>
+        <h3>Plug & Play Setup</h3>
+        <p>Connect your number, set your business details, and go live in minutes. No technical skills required.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing" id="pricing">
+    <p class="section-label reveal">Pricing</p>
+    <h2 class="reveal">Simple, flat pricing.</h2>
+    <p class="reveal">No per-minute fees. No surprises. Cancel anytime.</p>
+    <div class="pricing-cards">
+      <div class="pricing-card reveal">
+        <p class="plan-name">Starter</p>
+        <p class="plan-price">$97<span>/mo</span></p>
+        <p class="plan-desc">Perfect for solo operators and small crews just getting started.</p>
+        <ul class="plan-features">
+          <li>AI Voice Receptionist</li>
+          <li>Up to 200 calls/mo</li>
+          <li>Lead Dashboard</li>
+          <li>SMS Notifications</li>
+          <li>1 Business Number</li>
+        </ul>
+        <a href="#" class="plan-btn plan-btn-outline">Get Started</a>
+      </div>
+      <div class="pricing-card popular reveal">
+        <div class="popular-badge">Most Popular</div>
+        <p class="plan-name">Pro</p>
+        <p class="plan-price">$197<span>/mo</span></p>
+        <p class="plan-desc">For growing businesses that want full lead capture across every channel.</p>
+        <ul class="plan-features">
+          <li>Everything in Starter</li>
+          <li>Unlimited calls</li>
+          <li>Website Chat Widget</li>
+          <li>Automated SMS Follow-Up</li>
+          <li>Calendar Booking</li>
+          <li>Priority Support</li>
+        </ul>
+        <a href="#" class="plan-btn plan-btn-solid">Get Started</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="cta-banner">
+    <h2 class="reveal">Stop losing jobs<br/>to missed calls.</h2>
+    <p class="reveal">Join service businesses using Juvo to capture every lead and book more jobs — on autopilot.</p>
+    <a href="#" class="btn-white reveal">Start Your Free Trial</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <img src="data:image/png;base64,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" alt="Juvo" style="height:36px; display:block; filter:brightness(0) invert(1);"/>
+    <p>© 2025 Juvo. All rights reserved.</p>
+    <div class="footer-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Contact</a>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(el => {
+        if (el.isIntersecting) {
+          el.target.classList.add('visible');
+          observer.unobserve(el.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>
+</user_query>

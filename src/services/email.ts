@@ -23,8 +23,8 @@ export type SendWelcomeEmailParams = {
   setPasswordUrl?: string | null;
 };
 
-const WELCOME_SUBJECT = "You're live - Your LeadLasso number is ready";
-const PASSWORD_RESET_SUBJECT = 'Reset your LeadLasso password';
+const WELCOME_SUBJECT = "You're live - Your Juvo number is ready";
+const PASSWORD_RESET_SUBJECT = 'Reset your Juvo password';
 
 type SendPasswordResetEmailParams = {
   email: string;
@@ -51,7 +51,7 @@ function buildSetPasswordCtaBlock(setPasswordUrl: string | null | undefined): st
   const url = setPasswordUrl?.trim();
   if (!url) return '';
   const href = escapeHtmlAttr(url);
-  const label = 'Set your password to access your LeadLasso dashboard';
+  const label = 'Set your password to access your Juvo dashboard';
   return [
     '<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;margin:14px 0 0 0;">',
     '<tr><td align="center" valign="top" style="padding:0;">',
@@ -132,15 +132,15 @@ function buildPlainTextFallback(params: SendWelcomeEmailParams): string {
   const lines = [
     `Hi ${(params.senderName || 'there').trim() || 'there'},`,
     '',
-    `You're all set — LeadLasso is now live for ${params.businessName}.`,
+    `You're all set — Juvo is now live for ${params.businessName}.`,
     '',
-    `Your LeadLasso number: ${params.leadlassoNumber}`,
+    `Your Juvo number: ${params.leadlassoNumber}`,
     '',
   ];
   if (params.setPasswordUrl?.trim()) {
     lines.push('Set your password (one-time secure link):', params.setPasswordUrl.trim(), '');
   }
-  lines.push('https://getleadlasso.io', 'contact@getleadlasso.io');
+  lines.push('https://getjuvo.io', 'contact@getjuvo.io');
   return lines.join('\n');
 }
 
@@ -240,7 +240,7 @@ function buildPasswordResetHtml(actionLink: string): string {
     '<head>',
     '<meta charset="UTF-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
-    '<title>Reset your LeadLasso password</title>',
+    '<title>Reset your Juvo password</title>',
     '<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">',
     '</head>',
     '<body style="margin:0;padding:0;background: linear-gradient(180deg, ' +
@@ -257,7 +257,7 @@ function buildPasswordResetHtml(actionLink: string): string {
     '<tr>',
     '<td style="text-align:center;padding:0 8px;">',
     '<h1 style="margin:0 0 10px 0;font-family:Poppins,Arial,sans-serif;font-size:28px;line-height:1.2;font-weight:700;color:#ffffff;">Reset your password</h1>',
-    '<p style="margin:0 0 22px 0;font-family:Inter,Arial,sans-serif;font-size:15px;line-height:1.6;font-weight:400;opacity:0.92;">Click below to set a new password for your LeadLasso account.</p>',
+    '<p style="margin:0 0 22px 0;font-family:Inter,Arial,sans-serif;font-size:15px;line-height:1.6;font-weight:400;opacity:0.92;">Click below to set a new password for your Juvo account.</p>',
     '</td>',
     '</tr>',
     '<tr>',
@@ -291,7 +291,7 @@ function buildPasswordResetHtml(actionLink: string): string {
 
 function buildPasswordResetText(params: SendPasswordResetEmailParams): string {
   return [
-    'Reset your LeadLasso password',
+    'Reset your Juvo password',
     '',
     'Click the "Reset Password" button in this email to set a new password.',
     '',
@@ -301,7 +301,7 @@ function buildPasswordResetText(params: SendPasswordResetEmailParams): string {
 
 export async function sendPasswordResetEmail(params: SendPasswordResetEmailParams): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.FROM_EMAIL || 'LeadLasso <setup@getleadlasso.io>';
+  const fromEmail = process.env.FROM_EMAIL || 'Juvo <setup@getjuvo.io>';
   if (!apiKey || !fromEmail) {
     console.log('[email] skipped — provider not configured');
     return;

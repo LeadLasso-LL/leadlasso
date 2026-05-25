@@ -1,5 +1,5 @@
 /**
- * Phone normalization for LeadLasso (E.164-style).
+ * Phone normalization for Juvo (E.164-style).
  * Reused by onboarding and consistent with webhook lookups.
  */
 export function normalizePhone(phone: string): string {

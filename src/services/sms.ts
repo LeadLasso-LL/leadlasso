@@ -1,6 +1,6 @@
 /**
  * Send SMS via Twilio. Used when forwarding to owner, replying to customer, or sending auto-reply.
- * All sends use the business's LeadLasso number as From so replies come back to the same webhook.
+ * All sends use the business's Juvo number as From so replies come back to the same webhook.
  */
 import { twilioClient } from '../lib/twilio';
 import { supabase } from '../lib/supabase';

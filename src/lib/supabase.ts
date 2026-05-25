@@ -1,5 +1,5 @@
 /**
- * Supabase client and shared types for LeadLasso.
+ * Supabase client and shared types for Juvo.
  * Uses service role key so the backend can read/write all tables.
  * No auth layer in this scaffold; webhooks are public endpoints.
  */
@@ -41,7 +41,7 @@ export interface BusinessRow {
   preferred_area_code: string | null;
   /** Owner SMS when immediate missed-call lead alert is triggered */
   owner_new_lead_alerts_enabled: boolean;
-  /** Owner SMS when customer texts the LeadLasso number (forwarded to owner_phone) */
+  /** Owner SMS when customer texts the Juvo number (forwarded to owner_phone) */
   owner_customer_reply_alerts_enabled: boolean;
   created_at: string;
   updated_at: string;

@@ -240,7 +240,7 @@ export async function updateConversationTimestamps(conversationId: string): Prom
 
 /**
  * Most recent active conversation for this business (by last_message_at).
- * Used when owner replies to the LeadLasso number: we send their message to this customer.
+ * Used when owner replies to the Juvo number: we send their message to this customer.
  */
 export async function getMostRecentActiveConversationForBusiness(
   businessId: string
@@ -259,7 +259,7 @@ export async function getMostRecentActiveConversationForBusiness(
 
 /**
  * Most recent active conversation where owner_phone matches (for owner-reply webhook).
- * Used when the request is keyed by owner From number instead of LeadLasso To.
+ * Used when the request is keyed by owner From number instead of Juvo To.
  */
 export async function getMostRecentActiveConversationForOwner(
   ownerPhone: string

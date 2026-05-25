@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LeadLasso — Admin</title>
+  <title>Juvo — Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
@@ -315,10 +315,10 @@
 </head>
 <body>
   <div id="auth-view" class="card">
-    <h1>LeadLasso Admin</h1>
+    <h1>Juvo Admin</h1>
 
     <div id="auth-login-panel">
-      <p class="sub">Sign in with the same email and password you use for LeadLasso. Set your password from the link in your welcome email if you haven’t yet.</p>
+      <p class="sub">Sign in with the same email and password you use for Juvo. Set your password from the link in your welcome email if you haven’t yet.</p>
       <div class="field" style="margin-top:1.5rem;">
         <label class="field-label" for="emailInput">Email</label>
         <input type="email" id="emailInput" autocomplete="email" placeholder="you@example.com">
@@ -353,14 +353,14 @@
 
   <div id="claim-fail-view" class="card hidden">
     <h1>We couldn’t find your account</h1>
-    <p class="sub">No LeadLasso business is linked to this email yet. Use the same email as checkout, or contact support.</p>
+    <p class="sub">No Juvo business is linked to this email yet. Use the same email as checkout, or contact support.</p>
     <button type="button" class="btn btn-ghost" id="btn-signout-fail" style="margin-top:1rem;">Sign out</button>
   </div>
 
   <div id="app-view" class="hidden">
     <header class="page-head">
       <div>
-        <h1>LeadLasso Admin</h1>
+        <h1>Juvo Admin</h1>
         <p class="sub">Leads and settings for your business.</p>
       </div>
       <button type="button" class="btn btn-ghost btn-small" id="btn-signout">Sign out</button>
@@ -370,7 +370,7 @@
         <h2>Leads</h2>
         <p class="sub" style="margin-bottom:1rem;">Newest first.</p>
         <ul id="leads-list" class="lead-list"></ul>
-        <p id="leads-empty" class="empty-state hidden">No leads yet. When someone misses a call to your LeadLasso number, they’ll appear here.</p>
+        <p id="leads-empty" class="empty-state hidden">No leads yet. When someone misses a call to your Juvo number, they’ll appear here.</p>
       </section>
       <section class="card">
         <h2>Settings</h2>
@@ -389,7 +389,7 @@
         <div class="field">
           <label class="field-label" for="f-forward">Forward-to phone</label>
           <input type="tel" id="f-forward" autocomplete="tel">
-          <p class="field-helper">Where LeadLasso calls are forwarded to</p>
+          <p class="field-helper">Where Juvo calls are forwarded to</p>
         </div>
         <div class="field">
           <span class="field-label">Text notifications (to your personal phone)</span>
@@ -404,7 +404,7 @@
             <input type="checkbox" id="f-alert-customer-reply" checked>
             <div>
               <label for="f-alert-customer-reply">Customer reply alerts</label>
-              <p class="field-helper">Receive a text when a lead replies to your LeadLasso message.</p>
+              <p class="field-helper">Receive a text when a lead replies to your Juvo message.</p>
             </div>
           </div>
         </div>
@@ -423,7 +423,7 @@
           </div>
         </div>
         <div class="field">
-          <label class="field-label">LeadLasso number</label>
+          <label class="field-label">Juvo number</label>
           <input type="text" id="f-ll-number" disabled readonly>
           <p class="field-helper">This value is assigned during setup and cannot be changed.</p>
         </div>

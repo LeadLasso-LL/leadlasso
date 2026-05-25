@@ -5,7 +5,7 @@
 import { supabase } from '../lib/supabase';
 
 function portalPublicOrigin(): string {
-  const base = process.env.PORTAL_PUBLIC_ORIGIN || 'https://start.getleadlasso.io';
+  const base = process.env.PORTAL_PUBLIC_ORIGIN || 'https://start.getjuvo.io';
   return base.replace(/\/$/, '');
 }
 

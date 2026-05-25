@@ -1,5 +1,5 @@
 /**
- * Pure rules for whether an inbound LeadLasso voice leg should trigger missed-call follow-up.
+ * Pure rules for whether an inbound Juvo voice leg should trigger missed-call follow-up.
  * Decisions use only Twilio terminal callback fields (CallStatus, CallDuration, AnsweredBy).
  */
 

@@ -13,7 +13,7 @@ import { sendWelcomeEmailForOnboarding } from '../services/email';
 import { provisionLocalNumber, releaseNumber } from '../services/twilio-provisioning';
 
 /** Where users land after Stripe Checkout (must match hosted onboarding page). Not PUBLIC_BASE_URL (webhooks/TwiML). */
-const ONBOARDING_PAGE_ORIGIN = 'https://start.getleadlasso.io';
+const ONBOARDING_PAGE_ORIGIN = 'https://start.getjuvo.io';
 
 const REQUIRED = ['business_name', 'email', 'owner_phone', 'setup_type', 'preferred_area_code'] as const;
 
@@ -22,7 +22,7 @@ export type OnboardingBody = {
   email?: string;
   sender_name?: string;
   owner_phone?: string;
-  /** Optional: owner consent to receive LeadLasso owner alerts via SMS (missed calls, customer replies, account alerts). */
+  /** Optional: owner consent to receive Juvo owner alerts via SMS (missed calls, customer replies, account alerts). */
   owner_sms_consent?: boolean | string;
   forward_to_phone?: string;
   setup_type?: string;

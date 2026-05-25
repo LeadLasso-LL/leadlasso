@@ -16,7 +16,7 @@ const supabase = createClient(url, key);
 async function main() {
   const { data, error } = await supabase.from('businesses').insert({
     business_name: 'Example Business',
-    sender_name: 'LeadLasso',
+    sender_name: 'Juvo',
     owner_phone: '+15559876543',
     leadlasso_number: null,
     auto_reply_template: "Thanks for calling! We missed you. Reply to this message and we'll get back to you.",

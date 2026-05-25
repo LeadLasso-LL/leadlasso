@@ -1,7 +1,7 @@
 /**
  * POST /webhooks/incoming-call
  *
- * Normal flow: customer calls the LeadLasso number → identify business by To (leadlasso_number).
+ * Normal flow: customer calls the Juvo number → identify business by To (leadlasso_number).
  * replace_number: TwiML Dial forward_to_phone (fallback owner_phone if unset — legacy rows).
  * forwarding: Reject so the forwarded leg ends; final status callback drives follow-up.
  *
@@ -94,7 +94,7 @@ function shouldSendNewMissedCallOwnerText(business: BusinessRow): boolean {
 }
 
 function buildImmediateOwnerMissedCallAlertBody(leadCode: string, callerNumber: string): string {
-  return `New missed call lead ${leadCode}\nFrom: ${callerNumber}\n\nLeadLasso just texted them instantly.\n\nWe'll send their response here, or you can call them back now.`;
+  return `New missed call lead ${leadCode}\nFrom: ${callerNumber}\n\nJuvo just texted them instantly.\n\nWe'll send their response here, or you can call them back now.`;
 }
 
 function normalizePhone(phone: string): string {

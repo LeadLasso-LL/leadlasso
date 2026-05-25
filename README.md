@@ -1,4 +1,4 @@
-# LeadLasso Backend (scaffold)
+# Juvo Backend (scaffold)
 
 Node.js + Express + Supabase. One backend, one set of webhooks, many businesses. Business is identified by the Twilio number (To) that received the call or SMS. No Twilio Studio; no per-business flows; no frontend or auth in this scaffold.
 
@@ -46,7 +46,7 @@ scripts/
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (backend only) |
 | `SUPABASE_ANON_KEY` | Supabase anon (public) key — injected into `/portal` for browser Auth + RLS |
-| `PORTAL_PUBLIC_ORIGIN` | Public origin for password-setup redirects (no trailing slash), e.g. `https://start.getleadlasso.io` |
+| `PORTAL_PUBLIC_ORIGIN` | Public origin for password-setup redirects (no trailing slash), e.g. `https://start.getjuvo.io` |
 | `RESEND_API_KEY` / `FROM_EMAIL` | Welcome email (includes set-password CTA for new auth users) |
 
 Copy `.env.example` to `.env` and set these.
@@ -54,7 +54,7 @@ Copy `.env.example` to `.env` and set these.
 ## Customer portal (`/portal`)
 
 - Run migration `007_portal_auth_leads_rls.sql` (adds `businesses.user_id`, `leads`, RLS, `claim_business_for_current_user()`).
-- In **Supabase → Authentication → URL configuration**, add **Redirect URLs**: `https://start.getleadlasso.io/portal` and `https://start.getleadlasso.io/auth/set-password` (match `PORTAL_PUBLIC_ORIGIN`).
+- In **Supabase → Authentication → URL configuration**, add **Redirect URLs**: `https://start.getjuvo.io/portal` and `https://start.getjuvo.io/auth/set-password` (match `PORTAL_PUBLIC_ORIGIN`).
 - New customers get a **set-password** link in the Resend welcome email (server-generated Supabase recovery link). After setting a password, they sign in at `/portal` with **email + password**. `claim_business_for_current_user()` links the session to `businesses` when needed.
 - Open **`GET /portal`** on your deployed API host (template is `templates/portal.html`, copied to `dist/templates` on build).
 
@@ -75,7 +75,7 @@ Run the migration in the Supabase SQL Editor (or via CLI).
 - **POST /webhooks/incoming-sms** — Identify business by To; if From === owner, treat as owner reply (most recent conversation); else customer (find/create conversation, forward to owner). Skeleton: lookups only; no send yet.
 - **POST /webhooks/owner-reply** — Identify owner by From; most recent active conversation; skeleton: update timestamps only; later: send to customer.
 
-All endpoints use the same URLs for every LeadLasso number; the backend resolves the business by the number that received the event.
+All endpoints use the same URLs for every Juvo number; the backend resolves the business by the number that received the event.
 
 ## Run
 

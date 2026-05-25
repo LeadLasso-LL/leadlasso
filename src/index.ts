@@ -1,5 +1,5 @@
 /**
- * LeadLasso backend — one Express app, one set of webhooks, many businesses.
+ * Juvo backend — one Express app, one set of webhooks, many businesses.
  * Business is identified by the Twilio number (To) that received the call or SMS.
  * No per-business flows; no Twilio Studio as the main logic layer.
  */
@@ -22,12 +22,12 @@ import { sendPasswordResetEmail } from './services/email';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/** Browser onboarding form on getleadlasso.io calls API on start.getleadlasso.io — CORS required. */
+/** Browser onboarding form on getjuvo.io calls API on start.getjuvo.io — CORS required. */
 const CORS_ALLOWED_ORIGINS = new Set(
   [
-    'https://getleadlasso.io',
-    'https://www.getleadlasso.io',
-    'https://start.getleadlasso.io',
+    'https://getjuvo.io',
+    'https://www.getjuvo.io',
+    'https://start.getjuvo.io',
     ...(process.env.CORS_ORIGINS || '')
       .split(',')
       .map((o) => o.trim())
@@ -94,7 +94,7 @@ app.get('/auth/set-password', (_req, res) => {
 });
 
 function portalPublicOrigin(): string {
-  const base = process.env.PORTAL_PUBLIC_ORIGIN || 'https://start.getleadlasso.io';
+  const base = process.env.PORTAL_PUBLIC_ORIGIN || 'https://start.getjuvo.io';
   return base.replace(/\/$/, '');
 }
 
@@ -144,7 +144,7 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
 
-// --- Webhooks: same URLs for all LeadLasso numbers; backend resolves business by To (or From for owner-reply) ---
+// --- Webhooks: same URLs for all Juvo numbers; backend resolves business by To (or From for owner-reply) ---
 
 app.post('/webhooks/incoming-call', handleIncomingCall);
 app.post('/webhooks/incoming-call/status', handleIncomingCallStatusCallback);

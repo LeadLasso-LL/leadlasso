@@ -1,13 +1,13 @@
 /**
  * POST /webhooks/incoming-sms
  *
- * All SMS to a LeadLasso number hits this endpoint. We identify the business by To (that number).
+ * All SMS to a Juvo number hits this endpoint. We identify the business by To (that number).
  * Normal flow: customer replied to our auto-reply, or owner replied to our forward — we decide by From.
  *
  * Logic (skeleton — full behavior in later phase):
  * 1. Identify business by To. If none or inactive or no leadlasso_number → ignore (empty 200).
  * 2. If From === owner_phone: owner is replying → find most recent active conversation for this business,
- *    send owner's message to that customer from LeadLasso number, update conversation timestamps.
+ *    send owner's message to that customer from Juvo number, update conversation timestamps.
  * 3. Else: customer is messaging → find or create conversation, forward message to owner_phone,
  *    preserve conversation mapping for future owner replies.
  *

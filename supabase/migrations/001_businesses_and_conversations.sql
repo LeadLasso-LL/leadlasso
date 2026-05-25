@@ -1,4 +1,4 @@
--- LeadLasso: one backend, one schema, many businesses.
+-- Juvo: one backend, one schema, many businesses.
 -- Business is identified by leadlasso_number (the Twilio number that received the call/SMS).
 
 create type setup_type as enum ('forwarding', 'replace_number');

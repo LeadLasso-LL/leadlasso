@@ -1,5 +1,5 @@
 /**
- * Business lookup by the LeadLasso number that received the event.
+ * Business lookup by the Juvo number that received the event.
  * One lookup path for all webhooks: identify business by To (leadlasso_number).
  * No per-business flows; same logic for every business.
  */
@@ -17,7 +17,7 @@ function normalizePhone(phone: string): string {
 }
 
 /**
- * Find the business that owns this LeadLasso number (the number that received the call/SMS).
+ * Find the business that owns this Juvo number (the number that received the call/SMS).
  * Returns null if no business has this number — webhook should then ignore or reject.
  */
 export async function findBusinessByLeadlassoNumber(

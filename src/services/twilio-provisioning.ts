@@ -1,6 +1,6 @@
 /**
  * Twilio number provisioning for onboarding.
- * Search US local numbers by area code, purchase, and configure webhooks for LeadLasso.
+ * Search US local numbers by area code, purchase, and configure webhooks for Juvo.
  */
 import { twilioClient, getPublicBaseUrl } from '../lib/twilio';
 
@@ -11,7 +11,7 @@ export interface ProvisionedNumber {
 
 /**
  * Find and purchase the first available US local number in the given area code.
- * Configures Voice URL, Voice status callback, and SMS URL for LeadLasso webhooks.
+ * Configures Voice URL, Voice status callback, and SMS URL for Juvo webhooks.
  * @throws if no numbers available or Twilio API error
  */
 export async function provisionLocalNumber(areaCode: string): Promise<ProvisionedNumber> {

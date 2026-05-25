@@ -78,7 +78,7 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     return;
   }
 
-  console.log('LeadLasso number provisioned:', result.leadlasso_number);
+  console.log('Juvo number provisioned:', result.leadlasso_number);
 
   res.status(200).send();
 }
