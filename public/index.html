@@ -133,18 +133,10 @@
     }
 
     .hero-mark {
-      width: 72px;
-      height: 72px;
+      display: block;
+      height: 110px;
+      width: auto;
       margin: 0 auto 1.75rem;
-      background-color: var(--green);
-      mask-image: url("/Logo%20Files/Favicons/browser.png");
-      mask-size: contain;
-      mask-repeat: no-repeat;
-      mask-position: center;
-      -webkit-mask-image: url("/Logo%20Files/Favicons/browser.png");
-      -webkit-mask-size: contain;
-      -webkit-mask-repeat: no-repeat;
-      -webkit-mask-position: center;
       opacity: 0;
       animation: fadeUp 0.7s ease 0.18s forwards;
     }
@@ -727,7 +719,7 @@
   <!-- HERO -->
   <section class="hero">
     <div class="hero-eyebrow">AI Receptionist for Service Businesses</div>
-    <div class="hero-mark" role="img" aria-label="Juvo"></div>
+    <img class="hero-mark" src="/juvo-mark.svg" alt="" width="110" height="110" aria-hidden="true" />
     <h1>
       Every Call Answered.<br/>
       <span>Every Lead Captured.</span>
