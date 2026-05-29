@@ -96,43 +96,53 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: space-between;
       text-align: center;
-      padding: 96px 5% 48px;
+      padding: 88px 5% 56px;
       position: relative;
       background: #ffffff;
       overflow: hidden;
     }
 
+    .hero-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 900px;
+    }
+
     .hero-mark {
       display: block;
-      height: 72px;
+      height: 84px;
       width: auto;
-      margin: 0 auto 1rem;
+      margin: 0 auto 1.25rem;
       opacity: 0;
       animation: fadeUp 0.7s ease 0.18s forwards;
     }
 
-    h1 {
+    .hero-main h1 {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 10px;
-      font-size: clamp(1.85rem, 4.2vw, 2.75rem);
-      line-height: 1.1;
-      letter-spacing: 0.02em;
+      font-size: clamp(2.35rem, 5.5vw, 4rem);
+      line-height: 1.08;
+      letter-spacing: -0.02em;
       color: var(--charcoal);
       max-width: 900px;
       opacity: 0;
       animation: fadeUp 0.7s ease 0.25s forwards;
     }
 
-    h1 .h1-accent {
+    .hero-main h1 .h1-accent {
       color: var(--green);
     }
 
     .hero-sub {
-      margin-top: 1.25rem;
+      margin-top: 1.5rem;
       font-size: clamp(1rem, 2vw, 1.2rem);
       color: var(--mid);
       font-weight: 400;
@@ -145,7 +155,7 @@
     .hero-actions {
       display: flex;
       gap: 1rem;
-      margin-top: 1.25rem;
+      margin-top: 1.75rem;
       opacity: 0;
       animation: fadeUp 0.7s ease 0.55s forwards;
     }
@@ -189,28 +199,30 @@
 
     @media (max-height: 760px) {
       .hero {
-        padding-top: 88px;
+        padding-top: 80px;
+        padding-bottom: 40px;
       }
       .hero-mark {
-        height: 60px;
-        margin-bottom: 0.75rem;
+        height: 64px;
+        margin-bottom: 1rem;
       }
-      h1 {
-        font-size: clamp(1.65rem, 3.6vw, 2.25rem);
+      .hero-main h1 {
+        font-size: clamp(2rem, 4.8vw, 3rem);
         gap: 8px;
       }
       .hero-sub {
-        margin-top: 1rem;
+        margin-top: 1.125rem;
         font-size: 0.95rem;
       }
       .hero-actions {
-        margin-top: 1rem;
+        margin-top: 1.25rem;
       }
     }
 
     .hero-proof {
-      margin-top: auto;
-      padding-top: 2.5rem;
+      margin-top: 0;
+      padding-top: 0;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       gap: 2rem;
@@ -712,18 +724,20 @@
 
   <!-- HERO -->
   <section class="hero">
-    <img class="hero-mark" src="/logo-hero.png" alt="Juvo" width="240" height="90" />
-    <h1>
-      <span>Every Call Answered.</span>
-      <span class="h1-accent">Every Lead Captured.</span>
-      <span>Every Job Booked.</span>
-    </h1>
-    <p class="hero-sub">
-      Juvo runs your front office 24/7 — answering calls, capturing leads, and booking jobs automatically. So you can focus on the work.
-    </p>
-    <div class="hero-actions">
-      <a href="#" class="btn-primary">Start Free Trial</a>
-      <a href="#how" class="btn-secondary">See How It Works</a>
+    <div class="hero-main">
+      <img class="hero-mark" src="/logo-hero.png" alt="Juvo" width="240" height="84" />
+      <h1>
+        <span>Every Call Answered.</span>
+        <span class="h1-accent">Every Lead Captured.</span>
+        <span>Every Job Booked.</span>
+      </h1>
+      <p class="hero-sub">
+        Juvo runs your front office 24/7 — answering calls, capturing leads, and booking jobs automatically. So you can focus on the work.
+      </p>
+      <div class="hero-actions">
+        <a href="#" class="btn-primary">Start Free Trial</a>
+        <a href="#how" class="btn-secondary">See How It Works</a>
+      </div>
     </div>
     <div class="hero-proof">
       <div class="proof-item">
