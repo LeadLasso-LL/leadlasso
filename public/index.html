@@ -23,11 +23,14 @@
       --border: #e2e2dc;
     }
 
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      background: #ffffff;
+    }
 
     body {
       font-family: 'DM Sans', sans-serif;
-      background: var(--white);
+      background: #ffffff;
       color: var(--charcoal);
       overflow-x: hidden;
     }
@@ -89,39 +92,34 @@
     /* ── HERO ── */
     .hero {
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       text-align: center;
-      padding: 120px 5% 80px;
+      padding: 96px 5% 48px;
       position: relative;
-      background: var(--white);
+      background: #ffffff;
       overflow: hidden;
-    }
-
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: -200px; left: 50%;
-      transform: translateX(-50%);
-      width: 900px; height: 900px;
-      background: radial-gradient(ellipse at center, rgba(27,94,59,0.07) 0%, transparent 70%);
-      pointer-events: none;
     }
 
     .hero-mark {
       display: block;
-      height: 90px;
+      height: 72px;
       width: auto;
-      margin: 0 auto 1.75rem;
+      margin: 0 auto 1rem;
       opacity: 0;
       animation: fadeUp 0.7s ease 0.18s forwards;
     }
 
     h1 {
-      font-size: clamp(3.5rem, 8vw, 7.5rem);
-      line-height: 0.95;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      font-size: clamp(1.85rem, 4.2vw, 2.75rem);
+      line-height: 1.1;
       letter-spacing: 0.02em;
       color: var(--charcoal);
       max-width: 900px;
@@ -129,13 +127,12 @@
       animation: fadeUp 0.7s ease 0.25s forwards;
     }
 
-    h1 span {
+    h1 .h1-accent {
       color: var(--green);
-      display: block;
     }
 
     .hero-sub {
-      margin-top: 2rem;
+      margin-top: 1.25rem;
       font-size: clamp(1rem, 2vw, 1.2rem);
       color: var(--mid);
       font-weight: 400;
@@ -148,7 +145,7 @@
     .hero-actions {
       display: flex;
       gap: 1rem;
-      margin-top: 2.5rem;
+      margin-top: 1.25rem;
       opacity: 0;
       animation: fadeUp 0.7s ease 0.55s forwards;
     }
@@ -190,8 +187,30 @@
       transform: translateY(-1px);
     }
 
+    @media (max-height: 760px) {
+      .hero {
+        padding-top: 88px;
+      }
+      .hero-mark {
+        height: 60px;
+        margin-bottom: 0.75rem;
+      }
+      h1 {
+        font-size: clamp(1.65rem, 3.6vw, 2.25rem);
+        gap: 8px;
+      }
+      .hero-sub {
+        margin-top: 1rem;
+        font-size: 0.95rem;
+      }
+      .hero-actions {
+        margin-top: 1rem;
+      }
+    }
+
     .hero-proof {
-      margin-top: 3.5rem;
+      margin-top: auto;
+      padding-top: 2.5rem;
       display: flex;
       align-items: center;
       gap: 2rem;
@@ -695,9 +714,9 @@
   <section class="hero">
     <img class="hero-mark" src="/logo-hero.png" alt="Juvo" width="240" height="90" />
     <h1>
-      Every Call Answered.<br/>
-      <span>Every Lead Captured.</span>
-      Every Job Booked.
+      <span>Every Call Answered.</span>
+      <span class="h1-accent">Every Lead Captured.</span>
+      <span>Every Job Booked.</span>
     </h1>
     <p class="hero-sub">
       Juvo runs your front office 24/7 — answering calls, capturing leads, and booking jobs automatically. So you can focus on the work.
