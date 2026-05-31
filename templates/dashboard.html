@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Juvo — Lead Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #1B5E3B;
+      --green-light: #2a7a50;
+      --green-dim: #f0f7f3;
+      --white: #ffffff;
+      --bg: #f8f8f6;
+      --charcoal: #1a1a1a;
+      --mid: #6b6b6b;
+      --border: #e8e8e4;
+      --new: #1B5E3B;
+      --new-bg: #f0f7f3;
+      --contacted: #b45309;
+      --contacted-bg: #fef3c7;
+      --booked: #1d4ed8;
+      --booked-bg: #eff6ff;
+      --completed: #374151;
+      --completed-bg: #f3f4f6;
+      --lost: #dc2626;
+      --lost-bg: #fef2f2;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--charcoal);
+      min-height: 100vh;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ── TOP NAV ── */
+    nav {
+      background: var(--green);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .nav-logo {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -0.01em;
+      text-decoration: none;
+    }
+
+    .nav-divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .nav-business {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .nav-avatar {
+      width: 34px;
+      height: 34px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--white);
+      cursor: pointer;
+    }
+
+    /* ── AUTH GATE ── */
+    .auth-wrap {
+      max-width: 420px;
+      margin: 4rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .auth-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 1.75rem;
+    }
+
+    .auth-card h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .auth-sub {
+      font-size: 0.875rem;
+      color: var(--mid);
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+
+    .auth-field { margin-bottom: 1rem; }
+
+    .auth-field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: var(--charcoal);
+    }
+
+    .auth-field input {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+
+    .auth-field input:focus {
+      outline: none;
+      border-color: var(--green);
+    }
+
+    .auth-error {
+      font-size: 0.82rem;
+      color: var(--lost);
+      margin-bottom: 0.75rem;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      background: var(--green);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover { background: var(--green-light); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .auth-link {
+      display: block;
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.82rem;
+      color: var(--green);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .page-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--charcoal);
+    }
+
+    .page-subtitle {
+      font-size: 0.875rem;
+      color: var(--mid);
+      margin-top: 0.2rem;
+    }
+
+    /* ── STATS ROW ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--mid);
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--charcoal);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .stat-card.highlight {
+      border-color: var(--green);
+      background: var(--green-dim);
+    }
+
+    .stat-card.highlight .stat-value {
+      color: var(--green);
+    }
+
+    /* ── FILTERS ── */
+    .filters {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.4rem 1rem;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      color: var(--mid);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--green); color: var(--green); }
+    .filter-btn.active { background: var(--green); border-color: var(--green); color: var(--white); }
+
+    /* ── LEADS LIST ── */
+    .leads-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .lead-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      cursor: pointer;
+    }
+
+    .lead-card:hover {
+      border-color: #ccc;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .lead-card.expanded {
+      border-color: var(--green);
+    }
+
+    .lead-main {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      padding: 1.1rem 1.25rem;
+      gap: 1rem;
+    }
+
+    .lead-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    .lead-avatar {
+      width: 40px;
+      height: 40px;
+      background: var(--green-dim);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    .lead-info { min-width: 0; }
+
+    .lead-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--charcoal);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .lead-details {
+      font-size: 0.82rem;
+      color: var(--mid);
+      margin-top: 0.15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .lead-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .lead-time {
+      font-size: 0.78rem;
+      color: var(--mid);
+      white-space: nowrap;
+    }
+
+    .status-badge {
+      padding: 0.25rem 0.7rem;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .status-new { background: var(--new-bg); color: var(--new); }
+    .status-contacted { background: var(--contacted-bg); color: var(--contacted); }
+    .status-booked { background: var(--booked-bg); color: var(--booked); }
+    .status-completed { background: var(--completed-bg); color: var(--completed); }
+    .status-lost { background: var(--lost-bg); color: var(--lost); }
+    .status-no_lead { background: #f3f4f6; color: #9ca3af; }
+
+    .expand-icon {
+      font-size: 0.7rem;
+      color: var(--mid);
+      transition: transform 0.2s;
+    }
+
+    .lead-card.expanded .expand-icon { transform: rotate(180deg); }
+
+    /* ── EXPANDED LEAD ── */
+    .lead-expanded {
+      display: none;
+      border-top: 1.5px solid var(--border);
+      padding: 1.25rem;
+      background: #fafaf8;
+    }
+
+    .lead-card.expanded .lead-expanded { display: block; }
+
+    .expanded-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .expanded-field label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--mid);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .expanded-field p {
+      font-size: 0.88rem;
+      color: var(--charcoal);
+      font-weight: 500;
+    }
+
+    .expanded-field a {
+      color: var(--green);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    .expanded-field a:hover { text-decoration: underline; }
+
+    .transcript-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--mid);
+      margin-bottom: 0.5rem;
+    }
+
+    .transcript-box {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.82rem;
+      color: var(--charcoal);
+      line-height: 1.7;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      white-space: pre-wrap;
+    }
+
+    .expanded-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .status-select {
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--charcoal);
+      background: var(--white);
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .status-select:focus { border-color: var(--green); }
+
+    .btn-call {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 1rem;
+      background: var(--green);
+      color: var(--white);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.15s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-call:hover { background: var(--green-light); }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--mid);
+    }
+
+    .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.4; }
+    .empty h3 { font-size: 1rem; font-weight: 700; color: var(--charcoal); margin-bottom: 0.4rem; }
+    .empty p { font-size: 0.875rem; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .stats { grid-template-columns: 1fr; }
+      .expanded-grid { grid-template-columns: 1fr; }
+      .lead-time { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="auth-view">
+    <nav>
+      <div class="nav-left">
+        <a href="/" class="nav-logo"><img src="/logo-white.png" alt="Juvo" style="height:36px;display:block;" /></a>
+      </div>
+    </nav>
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <h1>Sign in to Juvo</h1>
+        <p class="auth-sub">Use the same email and password from your welcome email to view your leads.</p>
+        <div class="auth-field">
+          <label for="emailInput">Email</label>
+          <input type="email" id="emailInput" autocomplete="email" placeholder="you@example.com" />
+        </div>
+        <div class="auth-field">
+          <label for="passwordInput">Password</label>
+          <input type="password" id="passwordInput" autocomplete="current-password" placeholder="Your password" />
+        </div>
+        <p id="login-error" class="auth-error hidden" role="alert"></p>
+        <button type="button" class="btn-primary" id="loginBtn">Sign in</button>
+        <button type="button" class="auth-link" id="linkForgotPassword">Forgot password?</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="claim-fail-view" class="hidden">
+    <nav>
+      <div class="nav-left">
+        <a href="/" class="nav-logo"><img src="/logo-white.png" alt="Juvo" style="height:36px;display:block;" /></a>
+      </div>
+    </nav>
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <h1>We couldn&rsquo;t find your account</h1>
+        <p class="auth-sub">No Juvo business is linked to this email yet. Use the same email as checkout, or contact support.</p>
+        <button type="button" class="btn-primary" id="btn-signout-fail">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="dashboard-view" class="hidden">
+    <nav>
+      <div class="nav-left">
+        <a href="/dashboard" class="nav-logo"><img src="/logo-white.png" alt="Juvo" style="height:36px;display:block;" /></a>
+        <div class="nav-divider"></div>
+        <span class="nav-business" id="nav-business-name"></span>
+      </div>
+      <div class="nav-right">
+        <div class="nav-avatar" id="nav-avatar-initials" title="Sign out"></div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Leads</h1>
+          <p class="page-subtitle">Every call captured by Juvo</p>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card highlight">
+          <p class="stat-label">New Leads</p>
+          <p class="stat-value" id="stat-new">0</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">This Month</p>
+          <p class="stat-value" id="stat-month">0</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Completed Jobs</p>
+          <p class="stat-value" id="stat-completed">0</p>
+        </div>
+      </div>
+
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="new">New</button>
+        <button class="filter-btn" data-filter="contacted">Contacted</button>
+        <button class="filter-btn" data-filter="booked">Booked</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+        <button class="filter-btn" data-filter="lost">Lost</button>
+      </div>
+
+      <div class="leads-list" id="leads-list"></div>
+
+      <div class="empty hidden" id="leads-empty">
+        <div class="empty-icon">📞</div>
+        <h3>No leads yet</h3>
+        <p>When Juvo captures a call, it will appear here.</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+    const supabase = createClient(SUPABASE_URL_PLACEHOLDER, SUPABASE_ANON_KEY_PLACEHOLDER, {
+      auth: { persistSession: true, detectSessionInUrl: false },
+    });
+
+    const $ = (id) => document.getElementById(id);
+    const authView = $('auth-view');
+    const dashboardView = $('dashboard-view');
+    const claimFailView = $('claim-fail-view');
+    const leadsListEl = $('leads-list');
+    const leadsEmptyEl = $('leads-empty');
+
+    const PASSWORD_RESET_REDIRECT_TO = `${window.location.origin}/auth/set-password`;
+    const STATUS_OPTIONS = ['new', 'contacted', 'booked', 'completed', 'lost', 'no_lead'];
+
+    let authBootstrapped = false;
+    let dashboardClaimRanThisSession = false;
+    let currentBusiness = null;
+    let allLeads = [];
+    let activeFilter = 'all';
+    let accessToken = null;
+
+    function showAuthView() {
+      authView.classList.remove('hidden');
+      dashboardView.classList.add('hidden');
+      claimFailView.classList.add('hidden');
+      const err = $('login-error');
+      if (err) {
+        err.classList.add('hidden');
+        err.textContent = '';
+      }
+    }
+
+    function businessInitials(name) {
+      const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      const compact = String(name || '').replace(/\s+/g, '');
+      return (compact.slice(0, 2) || 'JU').toUpperCase();
+    }
+
+    function callerInitials(name, phone) {
+      const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      if (parts.length === 1 && parts[0].length >= 2) {
+        return parts[0].slice(0, 2).toUpperCase();
+      }
+      const digits = String(phone || '').replace(/\D/g, '');
+      return digits.slice(-2) || '??';
+    }
+
+    function statusLabel(status) {
+      if (status === 'no_lead') return 'No Lead';
+      return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
+    function formatPhoneDisplay(phone) {
+      const digits = String(phone || '').replace(/\D/g, '');
+      const d = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+      if (d.length === 10) {
+        return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+      }
+      return phone || 'Unknown';
+    }
+
+    function formatRelativeTime(iso) {
+      const then = new Date(iso).getTime();
+      const diffMs = Date.now() - then;
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 1) return 'Just now';
+      if (mins < 60) return `${mins} min ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      if (days === 1) return 'Yesterday';
+      if (days < 7) return `${days}d ago`;
+      return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(iso));
+    }
+
+    function formatCalledAt(iso) {
+      const d = new Date(iso);
+      const now = new Date();
+      const sameDay = d.toDateString() === now.toDateString();
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      const timeFmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+      if (sameDay) return `Today, ${timeFmt.format(d)}`;
+      if (d.toDateString() === yesterday.toDateString()) return `Yesterday, ${timeFmt.format(d)}`;
+      return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(d);
+    }
+
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function isThisMonth(iso) {
+      const d = new Date(iso);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }
+
+    function updateStats() {
+      $('stat-new').textContent = String(allLeads.filter((l) => l.status === 'new').length);
+      $('stat-month').textContent = String(allLeads.filter((l) => isThisMonth(l.created_at)).length);
+      $('stat-completed').textContent = String(allLeads.filter((l) => l.status === 'completed').length);
+    }
+
+    function applyFilter() {
+      document.querySelectorAll('.lead-card').forEach((card) => {
+        const status = card.dataset.status;
+        card.style.display = activeFilter === 'all' || status === activeFilter ? '' : 'none';
+      });
+    }
+
+    function filterLeads(status, btn) {
+      activeFilter = status;
+      document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilter();
+    }
+
+    document.querySelectorAll('.filter-btn').forEach((btn) => {
+      btn.addEventListener('click', () => filterLeads(btn.dataset.filter, btn));
+    });
+
+    function toggleLead(card) {
+      card.classList.toggle('expanded');
+    }
+
+    async function patchLeadStatus(leadId, status) {
+      const resp = await fetch(`/api/leads/${leadId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data.error || 'Could not update status');
+      }
+      return data.lead;
+    }
+
+    function renderLeads() {
+      leadsListEl.innerHTML = '';
+      if (!allLeads.length) {
+        leadsEmptyEl.classList.remove('hidden');
+        updateStats();
+        return;
+      }
+      leadsEmptyEl.classList.add('hidden');
+      updateStats();
+
+      for (const row of allLeads) {
+        const card = document.createElement('div');
+        card.className = 'lead-card';
+        card.dataset.status = row.status;
+        card.dataset.leadId = row.id;
+
+        const displayName = row.caller_name || 'Unknown caller';
+        const jobText = row.job_description || 'No description provided';
+        const telHref = `tel:${row.caller_number}`;
+
+        card.innerHTML = `
+          <div class="lead-main">
+            <div class="lead-left">
+              <div class="lead-avatar">${escapeHtml(callerInitials(row.caller_name, row.caller_number))}</div>
+              <div class="lead-info">
+                <p class="lead-name">${escapeHtml(displayName)}</p>
+                <p class="lead-details">${escapeHtml(jobText)}</p>
+              </div>
+            </div>
+            <div class="lead-right">
+              <span class="lead-time">${escapeHtml(formatRelativeTime(row.created_at))}</span>
+              <span class="status-badge status-${escapeHtml(row.status)}">${escapeHtml(statusLabel(row.status))}</span>
+              <span class="expand-icon">▼</span>
+            </div>
+          </div>
+          <div class="lead-expanded">
+            <div class="expanded-grid">
+              <div class="expanded-field">
+                <label>Caller Name</label>
+                <p>${escapeHtml(displayName)}</p>
+              </div>
+              <div class="expanded-field">
+                <label>Callback Number</label>
+                <a href="${escapeHtml(telHref)}" onclick="event.stopPropagation()">${escapeHtml(formatPhoneDisplay(row.caller_number))}</a>
+              </div>
+              <div class="expanded-field">
+                <label>Job Description</label>
+                <p>${escapeHtml(jobText)}</p>
+              </div>
+              <div class="expanded-field">
+                <label>Called At</label>
+                <p>${escapeHtml(formatCalledAt(row.created_at))}</p>
+              </div>
+            </div>
+            <p class="transcript-label">Call Transcript</p>
+            <div class="transcript-box">${row.transcript ? escapeHtml(row.transcript) : 'No transcript available.'}</div>
+            <div class="expanded-actions">
+              <select class="status-select">
+                ${STATUS_OPTIONS.map((s) => `<option value="${s}"${s === row.status ? ' selected' : ''}>${statusLabel(s)}</option>`).join('')}
+              </select>
+              <a href="${escapeHtml(telHref)}" class="btn-call" onclick="event.stopPropagation()">📞 Call Back</a>
+            </div>
+          </div>
+        `;
+
+        card.addEventListener('click', () => toggleLead(card));
+
+        const select = card.querySelector('.status-select');
+        select.addEventListener('click', (e) => e.stopPropagation());
+        select.addEventListener('change', async (e) => {
+          e.stopPropagation();
+          const newStatus = select.value;
+          const prevStatus = row.status;
+          select.disabled = true;
+          try {
+            await patchLeadStatus(row.id, newStatus);
+            row.status = newStatus;
+            card.dataset.status = newStatus;
+            const badge = card.querySelector('.status-badge');
+            badge.className = `status-badge status-${newStatus}`;
+            badge.textContent = statusLabel(newStatus);
+            updateStats();
+            applyFilter();
+          } catch (err) {
+            console.error(err);
+            select.value = prevStatus;
+            alert(err.message || 'Could not update status. Try again.');
+          } finally {
+            select.disabled = false;
+          }
+        });
+
+        leadsListEl.appendChild(card);
+      }
+
+      applyFilter();
+    }
+
+    async function loadLeads(businessId) {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id, caller_name, caller_number, job_description, transcript, recording_url, status, created_at')
+        .eq('business_id', businessId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('[dashboard] load leads failed', error);
+        return;
+      }
+
+      allLeads = data || [];
+      renderLeads();
+    }
+
+    async function openDashboard() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        showAuthView();
+        return;
+      }
+      accessToken = session.access_token;
+
+      if (!dashboardClaimRanThisSession) {
+        dashboardClaimRanThisSession = true;
+        await supabase.rpc('claim_business_for_current_user');
+      }
+
+      const { data: udata } = await supabase.auth.getUser();
+      const uid = udata?.user?.id;
+      if (!uid) {
+        authView.classList.add('hidden');
+        claimFailView.classList.remove('hidden');
+        return;
+      }
+
+      let business = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('id, business_name')
+          .eq('user_id', uid)
+          .maybeSingle();
+        if (error) console.error(error);
+        if (data) {
+          business = data;
+          break;
+        }
+      }
+
+      if (!business) {
+        authView.classList.add('hidden');
+        claimFailView.classList.remove('hidden');
+        return;
+      }
+
+      currentBusiness = business;
+      authView.classList.add('hidden');
+      claimFailView.classList.add('hidden');
+      dashboardView.classList.remove('hidden');
+
+      $('nav-business-name').textContent = business.business_name || 'Your business';
+      $('nav-avatar-initials').textContent = businessInitials(business.business_name);
+
+      await loadLeads(business.id);
+    }
+
+    async function signOut() {
+      dashboardClaimRanThisSession = false;
+      currentBusiness = null;
+      accessToken = null;
+      allLeads = [];
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('[dashboard] signOut error', err);
+      }
+      showAuthView();
+      $('passwordInput').value = '';
+    }
+
+    $('loginBtn').addEventListener('click', async () => {
+      const errEl = $('login-error');
+      errEl.classList.add('hidden');
+      errEl.textContent = '';
+      const email = $('emailInput').value.trim();
+      const password = $('passwordInput').value;
+      if (!email || !password) {
+        errEl.textContent = 'Enter your email and password.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      const btn = $('loginBtn');
+      btn.disabled = true;
+      const prev = btn.textContent;
+      btn.textContent = 'Signing in…';
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          errEl.textContent = 'Invalid email or password';
+          errEl.classList.remove('hidden');
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prev;
+      }
+    });
+
+    $('linkForgotPassword').addEventListener('click', async () => {
+      const email = $('emailInput').value.trim();
+      if (!email) {
+        alert('Enter your email first, then click Forgot password.');
+        return;
+      }
+      try {
+        const resp = await fetch('/auth/request-password-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, redirectTo: PASSWORD_RESET_REDIRECT_TO }),
+        });
+        if (resp.ok) {
+          alert('Check your email for a password reset link.');
+        } else {
+          alert('Could not send reset email. Try again.');
+        }
+      } catch {
+        alert('Something went wrong. Try again.');
+      }
+    });
+
+    $('nav-avatar-initials').addEventListener('click', signOut);
+    $('btn-signout-fail').addEventListener('click', signOut);
+
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!authBootstrapped) return;
+      if (!session) {
+        dashboardClaimRanThisSession = false;
+        currentBusiness = null;
+        accessToken = null;
+        showAuthView();
+        return;
+      }
+      if (event === 'SIGNED_IN') {
+        await openDashboard();
+      }
+    });
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await openDashboard();
+    } else {
+      showAuthView();
+    }
+    authBootstrapped = true;
+  </script>
+</body>
+</html>
