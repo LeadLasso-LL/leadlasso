@@ -1,7 +1,5 @@
 /**
- * Juvo backend — one Express app, one set of webhooks, many businesses.
- * Business is identified by the Twilio number (To) that received the call or SMS.
- * No per-business flows; no Twilio Studio as the main logic layer.
+ * Juvo backend — Express app for onboarding, portal auth helpers, and webhooks.
  */
 import 'dotenv/config';
 import fs from 'fs';
@@ -12,8 +10,6 @@ import {
   handleIncomingCallDialAction,
   handleIncomingCallStatusCallback,
 } from './webhooks/incoming-call';
-import { handleIncomingSms } from './webhooks/sms';
-import { handleOwnerReply } from './webhooks/owner-reply';
 import { handleOnboardingBusiness, handleOnboardingSuccess } from './routes/onboarding';
 import { handleStripeWebhook } from './webhooks/stripe';
 import { supabase } from './lib/supabase';
@@ -22,7 +18,6 @@ import { sendPasswordResetEmail } from './services/email';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/** Browser onboarding form on getjuvo.io calls API on start.getjuvo.io — CORS required. */
 const CORS_ALLOWED_ORIGINS = new Set(
   [
     'https://getjuvo.io',
@@ -51,7 +46,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Stripe webhook must get raw body for signature verification (register before body parsers)
 app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
 app.use(express.urlencoded({ extended: true }));
@@ -144,15 +138,9 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
 
-// --- Webhooks: same URLs for all Juvo numbers; backend resolves business by To (or From for owner-reply) ---
-
 app.post('/webhooks/incoming-call', handleIncomingCall);
 app.post('/webhooks/incoming-call/status', handleIncomingCallStatusCallback);
 app.all('/webhooks/incoming-call/dial-action', handleIncomingCallDialAction);
-
-app.post('/webhooks/incoming-sms', handleIncomingSms);
-
-app.post('/webhooks/owner-reply', handleOwnerReply);
 
 app.post('/onboarding/business', handleOnboardingBusiness);
 app.get('/onboarding/success', handleOnboardingSuccess);

@@ -1,38 +1,45 @@
 /**
- * Inserts / resolves portal lead rows for missed calls (Twilio → service role, bypasses RLS).
- * Idempotent per Twilio CallSid via unique source_twilio_call_sid.
+ * Voice leads captured from calls (Retell / Twilio → service role, bypasses RLS).
+ * Idempotent per call_id when provided.
  */
 import { supabase } from '../lib/supabase';
+import type { LeadRow } from '../lib/supabase';
 
 const DUPLICATE_KEY = '23505';
 
-export type MissedCallLeadRow = {
-  id: string;
-  auto_reply_sent_at: string | null;
-  owner_missed_call_alert_sent_at: string | null;
+export type EnsureCallLeadInput = {
+  businessId: string;
+  callerNumber: string;
+  callId: string;
+  callerName?: string | null;
+  jobDescription?: string | null;
+  recordingUrl?: string | null;
+  transcript?: string | null;
 };
 
 /**
- * Ensures a lead row exists for this CallSid. On duplicate CallSid returns the existing row.
+ * Ensures a lead row exists for this call. On duplicate call_id returns the existing row.
  */
-export async function ensureMissedCallLead(
-  businessId: string,
-  callerPhone: string,
-  twilioCallSid: string
-): Promise<{ row: MissedCallLeadRow; inserted: boolean } | null> {
-  const phone = callerPhone?.trim();
-  const sid = twilioCallSid?.trim();
-  if (!businessId || !phone || !sid) return null;
+export async function ensureCallLead(
+  input: EnsureCallLeadInput
+): Promise<{ row: LeadRow; inserted: boolean } | null> {
+  const phone = input.callerNumber?.trim();
+  const callId = input.callId?.trim();
+  if (!input.businessId || !phone || !callId) return null;
 
   const { data: created, error } = await supabase
     .from('leads')
     .insert({
-      business_id: businessId,
-      caller_phone: phone,
+      business_id: input.businessId,
+      caller_number: phone,
+      call_id: callId,
+      caller_name: input.callerName?.trim() || null,
+      job_description: input.jobDescription?.trim() || null,
+      recording_url: input.recordingUrl?.trim() || null,
+      transcript: input.transcript?.trim() || null,
       status: 'new',
-      source_twilio_call_sid: sid,
     })
-    .select('id, auto_reply_sent_at, owner_missed_call_alert_sent_at')
+    .select('*')
     .single();
 
   if (!error && created) {
@@ -42,33 +49,22 @@ export async function ensureMissedCallLead(
   if (error?.code === DUPLICATE_KEY) {
     const { data: existing, error: fetchErr } = await supabase
       .from('leads')
-      .select('id, auto_reply_sent_at, owner_missed_call_alert_sent_at')
-      .eq('source_twilio_call_sid', sid)
+      .select('*')
+      .eq('call_id', callId)
       .maybeSingle();
 
     if (fetchErr || !existing) {
-      console.error('[leads] failed to load lead after duplicate CallSid', fetchErr);
+      console.error('[leads] failed to load lead after duplicate call_id', fetchErr);
       return null;
     }
     return { row: existing, inserted: false };
   }
 
-  console.error('[leads] ensureMissedCallLead insert failed', error);
+  console.error('[leads] ensureCallLead insert failed', error);
   return null;
 }
 
-export async function markLeadAutoReplySent(leadId: string): Promise<void> {
-  const { error } = await supabase
-    .from('leads')
-    .update({ auto_reply_sent_at: new Date().toISOString() })
-    .eq('id', leadId);
-  if (error) console.error('[leads] markLeadAutoReplySent failed', error);
-}
-
-export async function markLeadOwnerMissedCallAlertSent(leadId: string): Promise<void> {
-  const { error } = await supabase
-    .from('leads')
-    .update({ owner_missed_call_alert_sent_at: new Date().toISOString() })
-    .eq('id', leadId);
-  if (error) console.error('[leads] markLeadOwnerMissedCallAlertSent failed', error);
+export async function upsertLeadFromRetellWebhook(input: EnsureCallLeadInput): Promise<LeadRow | null> {
+  const result = await ensureCallLead(input);
+  return result?.row ?? null;
 }

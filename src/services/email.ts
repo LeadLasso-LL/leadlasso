@@ -1,6 +1,5 @@
 /**
  * Transactional email via Resend.
- * Welcome email sent after successful paid onboarding (webhook and/or success endpoint).
  */
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -11,15 +10,11 @@ export type WelcomeEmailSetupType = 'replace_number' | 'forwarding';
 
 export type SendWelcomeEmailParams = {
   email: string;
-  leadlassoNumber: string;
+  juvoNumber: string;
   setupType: WelcomeEmailSetupType;
   businessName: string;
-  senderName: string | null;
   ownerPhone: string;
   forwardToPhone: string | null;
-  /** null / empty = use default auto-reply sentence in HTML */
-  autoReplyTemplate: string | null;
-  /** Supabase recovery link for first-time password setup (new auth users only) */
   setPasswordUrl?: string | null;
 };
 
@@ -43,10 +38,6 @@ function escapeHtmlAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-/**
- * CTA block for welcome email when set_password_url is provided (new auth users).
- * Uses table + bgcolor on &lt;td&gt; so Gmail/Outlook still show a white “button” if &lt;a&gt; styles are stripped.
- */
 function buildSetPasswordCtaBlock(setPasswordUrl: string | null | undefined): string {
   const url = setPasswordUrl?.trim();
   if (!url) return '';
@@ -68,23 +59,9 @@ function buildSetPasswordCtaBlock(setPasswordUrl: string | null | undefined): st
   ].join('');
 }
 
-function defaultAutoReplyText(senderName: string, businessName: string): string {
-  return `Sorry we missed your call. This is ${senderName} from ${businessName}. How can we help?`;
-}
-
-/** Value injected into {{auto_reply_template}}: custom (escaped) or default sentence (escaped). */
-function buildAutoReplyHtmlFragment(params: SendWelcomeEmailParams): string {
-  const sender = (params.senderName || 'us').trim() || 'us';
-  const business = (params.businessName || 'us').trim() || 'us';
-  const custom = params.autoReplyTemplate?.trim();
-  if (custom) return escapeHtml(custom);
-  return escapeHtml(defaultAutoReplyText(sender, business));
-}
-
 async function loadWelcomeHtmlTemplate(setupType: WelcomeEmailSetupType): Promise<string> {
   const fileName =
     setupType === 'replace_number' ? 'welcome-replace-number.html' : 'welcome-call-forwarding.html';
-  // Dev (ts-node): src/services → ../../emails. Prod: dist/services → ../emails (copied by build).
   const searchRoots = [
     path.join(__dirname, '..', 'emails'),
     path.join(__dirname, '..', '..', 'emails'),
@@ -100,23 +77,18 @@ async function loadWelcomeHtmlTemplate(setupType: WelcomeEmailSetupType): Promis
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
-/**
- * Replace all {{placeholders}} with escaped or computed values before send.
- */
 function fillWelcomeEmailTemplate(html: string, params: SendWelcomeEmailParams): string {
-  const sender = (params.senderName || '').trim();
   const business = (params.businessName || '').trim();
-  const autoReplyHtml = buildAutoReplyHtmlFragment(params);
-  const setupTypeLiteral = params.setupType;
   const forward = (params.forwardToPhone || '').trim();
 
   const replacements: Record<string, string> = {
     '{{business_name}}': escapeHtml(business),
-    '{{sender_name}}': escapeHtml(sender),
+    '{{sender_name}}': 'there',
     '{{owner_phone}}': escapeHtml(params.ownerPhone || ''),
-    '{{leadlasso_number}}': escapeHtml(params.leadlassoNumber || ''),
-    '{{auto_reply_template}}': autoReplyHtml,
-    '{{setup_type}}': escapeHtml(setupTypeLiteral),
+    '{{juvo_number}}': escapeHtml(params.juvoNumber || ''),
+    '{{leadlasso_number}}': escapeHtml(params.juvoNumber || ''),
+    '{{auto_reply_template}}': '',
+    '{{setup_type}}': escapeHtml(params.setupType),
     '{{forward_to_phone}}': escapeHtml(forward),
     '{{set_password_cta_block}}': buildSetPasswordCtaBlock(params.setPasswordUrl),
   };
@@ -130,11 +102,11 @@ function fillWelcomeEmailTemplate(html: string, params: SendWelcomeEmailParams):
 
 function buildPlainTextFallback(params: SendWelcomeEmailParams): string {
   const lines = [
-    `Hi ${(params.senderName || 'there').trim() || 'there'},`,
+    'Hi there,',
     '',
     `You're all set — Juvo is now live for ${params.businessName}.`,
     '',
-    `Your Juvo number: ${params.leadlassoNumber}`,
+    `Your Juvo number: ${params.juvoNumber}`,
     '',
   ];
   if (params.setPasswordUrl?.trim()) {
@@ -144,49 +116,38 @@ function buildPlainTextFallback(params: SendWelcomeEmailParams): string {
   return lines.join('\n');
 }
 
-/** Map stored onboarding fields + provisioned number to welcome template params. */
 export function onboardingBodyToWelcomeParams(
   data: OnboardingBody,
-  leadlassoNumber: string
+  juvoNumber: string
 ): SendWelcomeEmailParams {
   const setupTypeRaw = data.setup_type?.trim() || '';
   const setupType: WelcomeEmailSetupType =
     setupTypeRaw === 'forward' || setupTypeRaw === 'forwarding' ? 'forwarding' : 'replace_number';
   return {
     email: String(data.email),
-    leadlassoNumber,
+    juvoNumber,
     setupType,
     businessName: String(data.business_name),
-    senderName: data.sender_name?.trim() || null,
     ownerPhone: String(data.owner_phone),
     forwardToPhone:
       data.forward_to_phone != null && String(data.forward_to_phone).trim() !== ''
         ? String(data.forward_to_phone).trim()
         : null,
-    autoReplyTemplate: data.auto_reply_template ?? null,
   };
 }
 
-/**
- * Sends welcome email for a newly created business (use only right after createBusinessWithNumber).
- * Delegates to {@link sendWelcomeEmail}.
- */
 export async function sendWelcomeEmailForOnboarding(
   data: OnboardingBody,
-  leadlassoNumber: string,
+  juvoNumber: string,
   setPasswordUrl?: string | null
 ): Promise<void> {
   const params: SendWelcomeEmailParams = {
-    ...onboardingBodyToWelcomeParams(data, leadlassoNumber),
+    ...onboardingBodyToWelcomeParams(data, juvoNumber),
     setPasswordUrl: setPasswordUrl ?? null,
   };
   await sendWelcomeEmail(params);
 }
 
-/**
- * Sends the welcome email after successful onboarding.
- * Uses RESEND_API_KEY and FROM_EMAIL.
- */
 export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.FROM_EMAIL;
@@ -229,11 +190,9 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
 
 function buildPasswordResetHtml(actionLink: string): string {
   const link = escapeHtmlAttr(actionLink);
-
   const primary = '#e13c3c';
   const secondary = '#db7676';
 
-  // Table-based layout for broad email client support.
   return [
     '<!DOCTYPE html>',
     '<html lang="en">',

@@ -69,7 +69,7 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     return;
   }
 
-  let result: { business_id: string; leadlasso_number: string };
+  let result: { business_id: string; juvo_number: string };
   try {
     result = await createBusinessWithNumber(onboardingData, customerId, session.id);
   } catch (err) {
@@ -78,7 +78,7 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     return;
   }
 
-  console.log('Juvo number provisioned:', result.leadlasso_number);
+  console.log('Juvo number provisioned:', result.juvo_number);
 
   res.status(200).send();
 }

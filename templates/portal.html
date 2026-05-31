@@ -370,17 +370,13 @@
         <h2>Leads</h2>
         <p class="sub" style="margin-bottom:1rem;">Newest first.</p>
         <ul id="leads-list" class="lead-list"></ul>
-        <p id="leads-empty" class="empty-state hidden">No leads yet. When someone misses a call to your Juvo number, they’ll appear here.</p>
+        <p id="leads-empty" class="empty-state hidden">No leads yet. When Juvo captures a call, it will appear here.</p>
       </section>
       <section class="card">
         <h2>Settings</h2>
         <div class="field">
           <label class="field-label" for="f-business">Business name</label>
           <input type="text" id="f-business" autocomplete="organization">
-        </div>
-        <div class="field">
-          <label class="field-label" for="f-sender">Your first name (used in texts)</label>
-          <input type="text" id="f-sender" autocomplete="given-name">
         </div>
         <div class="field">
           <label class="field-label" for="f-owner-phone">Personal phone</label>
@@ -392,40 +388,9 @@
           <p class="field-helper">Where Juvo calls are forwarded to</p>
         </div>
         <div class="field">
-          <span class="field-label">Text notifications (to your personal phone)</span>
-          <div class="notify-option">
-            <input type="checkbox" id="f-alert-new-lead" checked>
-            <div>
-              <label for="f-alert-new-lead">New missed-call lead alerts</label>
-              <p class="field-helper">Receive a text when a new missed-call lead is created.</p>
-            </div>
-          </div>
-          <div class="notify-option">
-            <input type="checkbox" id="f-alert-customer-reply" checked>
-            <div>
-              <label for="f-alert-customer-reply">Customer reply alerts</label>
-              <p class="field-helper">Receive a text when a lead replies to your Juvo message.</p>
-            </div>
-          </div>
-        </div>
-        <div class="field">
-          <label class="field-label" for="f-message">Custom missed-call message</label>
-          <textarea id="f-message" maxlength="640"></textarea>
-          <p class="field-helper">Customers will receive this message after a missed call. You can include your booking link directly in this message.</p>
-          <div class="count-row">
-            <span id="msg-count">0 / 640</span>
-          </div>
-          <p id="msg-error" class="error-inline hidden"></p>
-          <p class="field-helper">Preview</p>
-          <div id="msg-preview" class="preview-box"></div>
-          <div class="toolbar">
-            <button type="button" class="btn btn-ghost btn-small" id="btn-reset-template">Reset to recommended template</button>
-          </div>
-        </div>
-        <div class="field">
           <label class="field-label">Juvo number</label>
-          <input type="text" id="f-ll-number" disabled readonly>
-          <p class="field-helper">This value is assigned during setup and cannot be changed.</p>
+          <input type="text" id="f-juvo-number" disabled readonly>
+          <p class="field-helper">Assigned during setup and cannot be changed.</p>
         </div>
         <div class="field">
           <label class="field-label">Assigned area code</label>
@@ -442,11 +407,6 @@
 
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-
-    const MAX_MESSAGE_LEN = 640;
-    const PROFANITY = new Set([
-      'fuck', 'fucking', 'shit', 'damn', 'bitch', 'asshole', 'bastard', 'cunt', 'dick', 'piss', 'slut', 'whore', 'nigger', 'nigga', 'fag', 'faggot', 'retard'
-    ]);
 
     const supabase = createClient(SUPABASE_URL_PLACEHOLDER, SUPABASE_ANON_KEY_PLACEHOLDER, {
       auth: { persistSession: true, detectSessionInUrl: false },
@@ -545,33 +505,7 @@
     /** Run claim_business_for_current_user at most once per signed-in browser session (reset on sign-out). */
     let portalClaimRanThisSession = false;
     let expandedLeadId = null;
-    const leadThreadCache = new Map();
-    const leadThreadElements = new Map();
-
-    function recommendedTemplate(b) {
-      const sender = (b.sender_name || 'us').trim() || 'us';
-      const name = (b.business_name || 'your business').trim() || 'your business';
-      return `Sorry we missed your call! This is ${sender} with ${name}. How can we help today?`;
-    }
-
-    function profanityHit(text) {
-      const lower = text.toLowerCase();
-      const words = lower.match(/[a-z']+/g) || [];
-      for (const w of words) {
-        if (PROFANITY.has(w)) return w;
-      }
-      return null;
-    }
-
-    function validateMessage(raw) {
-      const t = raw.trim();
-      if (!t) return { ok: false, error: 'Message cannot be empty.' };
-      if (t.length > MAX_MESSAGE_LEN) return { ok: false, error: `Message must be at most ${MAX_MESSAGE_LEN} characters.` };
-      const bad = profanityHit(t);
-      if (bad) return { ok: false, error: 'This message contains language we can’t allow. Please revise and try again.' };
-      return { ok: true, value: t };
-    }
-
+    const leadDetailElements = new Map();
     let currentBusiness = null;
     let settingsSaveConfirmTimer = null;
 
@@ -589,193 +523,92 @@
     }
 
     function bindSettingsInputs() {
-      ['f-business', 'f-sender', 'f-owner-phone', 'f-forward', 'f-message'].forEach((id) => {
+      ['f-business', 'f-owner-phone', 'f-forward'].forEach((id) => {
         $(id).addEventListener('input', clearSavedBanner);
       });
-      ['f-alert-new-lead', 'f-alert-customer-reply'].forEach((id) => {
-        $(id).addEventListener('change', clearSavedBanner);
-      });
     }
 
-    function updatePreview() {
-      const v = $('f-message').value;
-      $('msg-preview').textContent = v.trim() || '(empty)';
-      $('msg-count').textContent = `${v.length} / ${MAX_MESSAGE_LEN}`;
-    }
-
-    function normalizePhoneForLookup(phone) {
-      const raw = String(phone || '').trim();
-      if (!raw) return '';
-      const digits = raw.replace(/\D/g, '');
-      if (digits.length === 10 && !raw.startsWith('+')) return `+1${digits}`;
-      if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
-      return raw.startsWith('+') ? raw : `+${raw}`;
-    }
-
-    function safeMessageBody(value) {
-      const t = String(value == null ? '' : value);
-      return t.trim() ? t : '(empty message)';
-    }
-
-    function threadBubbleClass(senderType) {
-      if (senderType === 'owner') return 'thread-bubble-owner';
-      if (senderType === 'system') return 'thread-bubble-system';
-      return 'thread-bubble-customer';
-    }
-
-    function threadRowClass(senderType) {
-      if (senderType === 'owner') return 'thread-row-owner';
-      if (senderType === 'system') return 'thread-row-system';
-      return 'thread-row-customer';
-    }
-
-    async function fetchLeadConversationHistory(businessId, callerPhone) {
-      const customerPhone = normalizePhoneForLookup(callerPhone);
-      if (!customerPhone) {
-        return { state: 'empty', messages: [] };
-      }
-
-      const { data: convo, error: convoErr } = await supabase
-        .from('conversations')
-        .select('id, customer_phone')
-        .eq('business_id', businessId)
-        .eq('customer_phone', customerPhone)
-        .maybeSingle();
-
-      if (convoErr) {
-        throw convoErr;
-      }
-      if (!convo) {
-        return { state: 'empty', messages: [] };
-      }
-
-      const { data: messages, error: msgErr } = await supabase
-        .from('conversation_messages')
-        .select('id, sender_type, direction, body, created_at')
-        .eq('business_id', businessId)
-        .eq('conversation_id', convo.id)
-        .order('created_at', { ascending: true });
-
-      if (msgErr) {
-        throw msgErr;
-      }
-      if (!messages || !messages.length) {
-        return { state: 'empty', messages: [] };
-      }
-      return { state: 'ready', messages };
-    }
-
-    function renderThreadPanel(panelEl, threadResult) {
+    function renderLeadDetailPanel(panelEl, row) {
       panelEl.innerHTML = '';
-
-      if (threadResult.state === 'loading') {
+      const blocks = [];
+      if (row.caller_name) {
+        blocks.push(['Name', row.caller_name]);
+      }
+      if (row.job_description) {
+        blocks.push(['Job description', row.job_description]);
+      }
+      if (row.transcript) {
+        blocks.push(['Transcript', row.transcript]);
+      }
+      if (row.recording_url) {
+        const link = document.createElement('a');
+        link.href = row.recording_url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Listen to recording';
+        link.style.color = '#fff';
+        blocks.push(['Recording', link]);
+      }
+      if (!blocks.length) {
         const p = document.createElement('p');
         p.className = 'lead-thread-state';
-        p.textContent = 'Loading conversation...';
+        p.textContent = 'No call details captured yet.';
         panelEl.appendChild(p);
         return;
       }
-
-      if (threadResult.state === 'error') {
-        const p = document.createElement('p');
-        p.className = 'lead-thread-state';
-        p.textContent = 'Couldn’t load conversation history.';
-        panelEl.appendChild(p);
-        return;
-      }
-
-      if (!threadResult.messages || !threadResult.messages.length) {
-        const p = document.createElement('p');
-        p.className = 'lead-thread-state';
-        p.textContent = 'No conversation history yet.';
-        panelEl.appendChild(p);
-        return;
-      }
-
       const scroller = document.createElement('div');
       scroller.className = 'lead-thread-scroller';
-      const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-      for (const msg of threadResult.messages) {
-        const row = document.createElement('div');
-        row.className = `thread-row ${threadRowClass(msg.sender_type)}`;
-
-        const bubble = document.createElement('div');
-        bubble.className = `thread-bubble ${threadBubbleClass(msg.sender_type)}`;
-        bubble.textContent = safeMessageBody(msg.body);
-
-        const time = document.createElement('span');
-        time.className = 'thread-time';
-        time.textContent = msg.created_at ? fmt.format(new Date(msg.created_at)) : '';
-
-        row.appendChild(bubble);
-        row.appendChild(time);
-        scroller.appendChild(row);
+      for (const [label, value] of blocks) {
+        const block = document.createElement('div');
+        block.className = 'thread-bubble thread-bubble-customer';
+        block.style.maxWidth = '100%';
+        block.style.textAlign = 'left';
+        const title = document.createElement('strong');
+        title.textContent = label + ': ';
+        title.style.display = 'block';
+        title.style.marginBottom = '0.35rem';
+        block.appendChild(title);
+        if (value instanceof HTMLElement) {
+          block.appendChild(value);
+        } else {
+          const text = document.createElement('span');
+          text.textContent = value;
+          text.style.whiteSpace = 'pre-wrap';
+          block.appendChild(text);
+        }
+        scroller.appendChild(block);
       }
       panelEl.appendChild(scroller);
     }
 
-    async function toggleLeadHistory(params) {
-      const { leadId, businessId, callerPhone, panelEl, toggleEl } = params;
-
+    function toggleLeadDetail(params) {
+      const { leadId, panelEl, toggleEl, row } = params;
       if (expandedLeadId && expandedLeadId !== leadId) {
-        const prev = leadThreadElements.get(expandedLeadId);
+        const prev = leadDetailElements.get(expandedLeadId);
         if (prev) {
           prev.panel.classList.add('hidden');
           prev.toggle.setAttribute('aria-expanded', 'false');
         }
       }
-
       if (expandedLeadId === leadId) {
         panelEl.classList.add('hidden');
         toggleEl.setAttribute('aria-expanded', 'false');
         expandedLeadId = null;
         return;
       }
-
       expandedLeadId = leadId;
       panelEl.classList.remove('hidden');
       toggleEl.setAttribute('aria-expanded', 'true');
-      leadThreadElements.set(leadId, { panel: panelEl, toggle: toggleEl });
-
-      const cached = leadThreadCache.get(leadId);
-      if (cached) {
-        renderThreadPanel(panelEl, cached);
-        return;
-      }
-
-      renderThreadPanel(panelEl, { state: 'loading', messages: [] });
-      try {
-        const result = await fetchLeadConversationHistory(businessId, callerPhone);
-        leadThreadCache.set(leadId, result);
-        if (expandedLeadId === leadId) {
-          renderThreadPanel(panelEl, result);
-        }
-      } catch (err) {
-        console.error('[portal] conversation history fetch failed', err);
-        const failed = { state: 'error', messages: [] };
-        leadThreadCache.set(leadId, failed);
-        if (expandedLeadId === leadId) {
-          renderThreadPanel(panelEl, failed);
-        }
-      }
+      leadDetailElements.set(leadId, { panel: panelEl, toggle: toggleEl });
+      renderLeadDetailPanel(panelEl, row);
     }
-
-    $('f-message').addEventListener('input', updatePreview);
-
-    $('btn-reset-template').addEventListener('click', () => {
-      if (!currentBusiness) return;
-      clearSavedBanner();
-      $('f-message').value = recommendedTemplate(currentBusiness);
-      $('msg-error').classList.add('hidden');
-      updatePreview();
-    });
 
     async function loadLeads(businessId) {
       expandedLeadId = null;
-      leadThreadElements.clear();
+      leadDetailElements.clear();
       const { data, error } = await supabase
         .from('leads')
-        .select('id, caller_phone, status, created_at, booked_at')
+        .select('id, caller_name, caller_number, job_description, transcript, recording_url, status, created_at')
         .eq('business_id', businessId)
         .order('created_at', { ascending: false });
       if (error) {
@@ -804,7 +637,9 @@
         meta.className = 'lead-meta';
         const phone = document.createElement('span');
         phone.className = 'lead-phone';
-        phone.textContent = row.caller_phone;
+        phone.textContent = row.caller_name
+          ? `${row.caller_name} · ${row.caller_number}`
+          : row.caller_number;
         const dt = document.createElement('span');
         dt.className = 'lead-date';
         dt.textContent = fmt.format(new Date(row.created_at));
@@ -832,7 +667,7 @@
             btn.disabled = true;
             const { error: upErr } = await supabase
               .from('leads')
-              .update({ status: 'booked', booked_at: new Date().toISOString() })
+              .update({ status: 'booked' })
               .eq('id', row.id);
             btn.disabled = false;
             if (upErr) console.error(upErr);
@@ -842,14 +677,12 @@
         }
         const panel = document.createElement('div');
         panel.className = 'lead-thread hidden';
-        renderThreadPanel(panel, { state: 'empty', messages: [] });
         toggle.addEventListener('click', () => {
-          void toggleLeadHistory({
+          toggleLeadDetail({
             leadId: row.id,
-            businessId,
-            callerPhone: row.caller_phone,
             panelEl: panel,
             toggleEl: toggle,
+            row,
           });
         });
 
@@ -863,16 +696,10 @@
       currentBusiness = b;
       hideSettingsSaveConfirm();
       $('f-business').value = b.business_name || '';
-      $('f-sender').value = b.sender_name || '';
       $('f-owner-phone').value = b.owner_phone || '';
       $('f-forward').value = b.forward_to_phone || '';
-      $('f-message').value = b.auto_reply_template || recommendedTemplate(b);
-      $('f-ll-number').value = b.leadlasso_number || '';
+      $('f-juvo-number').value = b.juvo_number || '';
       $('f-area').value = b.preferred_area_code || '';
-      $('f-alert-new-lead').checked = b.owner_new_lead_alerts_enabled !== false;
-      $('f-alert-customer-reply').checked = b.owner_customer_reply_alerts_enabled !== false;
-      $('msg-error').classList.add('hidden');
-      updatePreview();
     }
 
     async function openPortal() {
@@ -906,7 +733,7 @@
       }
 
       const selectCols =
-        'id, business_name, sender_name, owner_phone, forward_to_phone, auto_reply_template, leadlasso_number, preferred_area_code, owner_new_lead_alerts_enabled, owner_customer_reply_alerts_enabled';
+        'id, business_name, owner_phone, forward_to_phone, juvo_number, preferred_area_code, industry';
       let b = null;
       let lastErr = null;
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -937,38 +764,24 @@
 
     $('btn-save').addEventListener('click', async () => {
       if (!currentBusiness) return;
-      const msgEl = $('msg-error');
-      msgEl.classList.add('hidden');
-      const msgCheck = validateMessage($('f-message').value);
-      if (!msgCheck.ok) {
-        msgEl.textContent = msgCheck.error;
-        msgEl.classList.remove('hidden');
-        return;
-      }
+      const msgEl = $('settings-save-confirm');
       const payload = {
         business_name: $('f-business').value.trim(),
-        sender_name: $('f-sender').value.trim() || null,
         owner_phone: $('f-owner-phone').value.trim(),
         forward_to_phone: $('f-forward').value.trim() || null,
-        auto_reply_template: msgCheck.value,
-        owner_new_lead_alerts_enabled: $('f-alert-new-lead').checked,
-        owner_customer_reply_alerts_enabled: $('f-alert-customer-reply').checked,
       };
       if (!payload.business_name) {
-        msgEl.textContent = 'Business name is required.';
-        msgEl.classList.remove('hidden');
+        alert('Business name is required.');
         return;
       }
       if (!payload.owner_phone) {
-        msgEl.textContent = 'Owner phone is required.';
-        msgEl.classList.remove('hidden');
+        alert('Owner phone is required.');
         return;
       }
       const { error } = await supabase.from('businesses').update(payload).eq('id', currentBusiness.id);
       if (error) {
         console.error(error);
-        msgEl.textContent = error.message || 'Could not save. Try again.';
-        msgEl.classList.remove('hidden');
+        alert(error.message || 'Could not save. Try again.');
         return;
       }
       Object.assign(currentBusiness, payload);

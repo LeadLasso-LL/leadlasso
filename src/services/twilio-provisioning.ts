@@ -11,7 +11,7 @@ export interface ProvisionedNumber {
 
 /**
  * Find and purchase the first available US local number in the given area code.
- * Configures Voice URL, Voice status callback, and SMS URL for Juvo webhooks.
+ * Configures Voice URL and voice status callback for Juvo webhooks.
  * @throws if no numbers available or Twilio API error
  */
 export async function provisionLocalNumber(areaCode: string): Promise<ProvisionedNumber> {
@@ -32,7 +32,6 @@ export async function provisionLocalNumber(areaCode: string): Promise<Provisione
   const baseUrl = getPublicBaseUrl();
   const voiceUrl = `${baseUrl}/webhooks/incoming-call`;
   const voiceStatusUrl = `${baseUrl}/webhooks/incoming-call/status`;
-  const smsUrl = `${baseUrl}/webhooks/incoming-sms`;
 
   const purchased = await twilioClient.incomingPhoneNumbers.create({
     phoneNumber: available[0].phoneNumber,
@@ -40,8 +39,6 @@ export async function provisionLocalNumber(areaCode: string): Promise<Provisione
     voiceMethod: 'POST',
     statusCallback: voiceStatusUrl,
     statusCallbackMethod: 'POST',
-    smsUrl,
-    smsMethod: 'POST',
   });
 
   return {

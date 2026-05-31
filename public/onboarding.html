@@ -473,13 +473,7 @@
         <div class="field">
           <label class="field-label" for="business_name">Business Name</label>
           <input type="text" id="business_name" name="business_name" required placeholder="Your business name">
-          <p class="field-helper">What your business is called in Juvo texts to leads</p>
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="first_name">First Name</label>
-          <input type="text" id="first_name" name="first_name" required placeholder="Your first name">
-          <p class="field-helper">The first name that is used in Juvo texts to leads</p>
+          <p class="field-helper">What your business is called in Juvo</p>
         </div>
 
         <div class="field">
@@ -491,21 +485,7 @@
         <div class="field">
           <label class="field-label" for="personal_phone">Personal Phone</label>
           <input type="tel" id="personal_phone" name="personal_phone" required placeholder="+1 (555) 000-0000">
-          <p class="field-helper">The number that we'll route messages to when a lead is captured and/or responds to texts.</p>
-          <label class="radio-option">
-            <input type="checkbox" id="owner_sms_consent" name="owner_sms_consent">
-            <div class="option-content">
-              <span>I agree to receive SMS messages from Juvo about missed call leads and customer replies.</span>
-              <p class="option-subtext">You can manage your text notification preferences in your Juvo Admin Portal at any time.</p>
-            </div>
-          </label>
-          <div class="field-helper-sms-disclosure">
-By providing your mobile number, you agree to receive SMS messages from Juvo about your request. Message frequency varies. Message & data rates may apply. Reply STOP to opt out, HELP for help. View 
-<a href="https://privacy.getjuvo.io/" target="_blank">Privacy Policy</a> 
-and 
-<a href="https://terms.getjuvo.io/" target="_blank">Terms</a>. 
-Consent is not a condition of purchase.
-</div>
+          <p class="field-helper">Your contact number for account notifications.</p>
         </div>
 
         <div class="field">
@@ -543,30 +523,6 @@ Consent is not a condition of purchase.
           <p class="field-helper">Customers will call your public-facing Juvo number, and we'll instantly forward all calls to this number so you can answer. This number is likely a business phone number rather than a personal cell phone.</p>
         </div>
 
-        <div class="field">
-          <label class="field-label">Auto-Reply Message</label>
-          <div class="radio-group">
-            <label class="radio-option">
-              <input type="radio" name="auto_reply_mode" value="default" checked>
-              <span>Use Juvo Default Message</span>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="auto_reply_mode" value="custom">
-              <span>Create Custom Message</span>
-            </label>
-          </div>
-          <p class="field-helper">Use Juvo's default text message, or create your own custom message.</p>
-          <div id="default_message_preview" class="default-message-preview">
-            Sorry we missed your call. This is <strong id="preview_first_name">[first name]</strong> from <strong id="preview_business_name">[business name]</strong>. How can we help?
-          </div>
-        </div>
-
-        <div class="field" id="custom_message_wrap" hidden>
-          <label class="field-label" for="auto_reply_template">Custom Auto-Reply Message</label>
-          <textarea id="auto_reply_template" name="auto_reply_template" rows="4" placeholder="Your custom message to missed call leads…"></textarea>
-          <p class="field-helper">We'll send this exact message to your missed call leads. Tip: include a booking link!</p>
-        </div>
-
         <div class="submit-wrap">
           <button type="submit" class="submit-btn">Continue to Payment</button>
           <p class="submit-helper">You're one step away from protecting your business from lost revenue</p>
@@ -583,8 +539,6 @@ Consent is not a condition of purchase.
     const resultDiv = document.getElementById('result');
     const headlineSection = document.querySelector('.headline-section');
     const ringNumberWrap = document.getElementById('ring_number_wrap');
-    const customMessageWrap = document.getElementById('custom_message_wrap');
-    const defaultMessagePreview = document.getElementById('default_message_preview');
 
     /** Branded pages may omit .card wrapper — never throw on hide. */
     function hideOnboardingFormCard() {
@@ -612,29 +566,10 @@ Consent is not a condition of purchase.
       if (forwardHelper) forwardHelper.hidden = replace;
     }
 
-    function toggleCustomMessage() {
-      const custom = document.querySelector('input[name="auto_reply_mode"]:checked')?.value === 'custom';
-      customMessageWrap.hidden = !custom;
-      defaultMessagePreview.style.display = custom ? 'none' : 'block';
-    }
-
-    function updateDefaultPreview() {
-      const first = document.getElementById('first_name').value.trim() || '[first name]';
-      const business = document.getElementById('business_name').value.trim() || '[business name]';
-      document.getElementById('preview_first_name').textContent = first;
-      document.getElementById('preview_business_name').textContent = business;
-    }
-    document.getElementById('first_name').addEventListener('input', updateDefaultPreview);
-    document.getElementById('business_name').addEventListener('input', updateDefaultPreview);
-
     document.querySelectorAll('input[name="setup_type"]').forEach(function (r) {
       r.addEventListener('change', toggleRingNumber);
     });
-    document.querySelectorAll('input[name="auto_reply_mode"]').forEach(function (r) {
-      r.addEventListener('change', toggleCustomMessage);
-    });
     toggleRingNumber();
-    toggleCustomMessage();
 
     async function fetchSuccessNumber(sessionId) {
       var url = BACKEND_BASE + '/onboarding/success?session_id=' + encodeURIComponent(sessionId);
@@ -657,13 +592,13 @@ Consent is not a condition of purchase.
       } catch (parseErr) {
         console.warn('[Juvo success] response JSON parse failed:', parseErr);
       }
-      if (res.ok && data.success && data.leadlasso_number) {
-        return data.leadlasso_number;
+      if (res.ok && data.success && data.juvo_number) {
+        return data.juvo_number;
       }
       return null;
     }
 
-    function buildSuccessHTML(leadlassoNumber) {
+    function buildSuccessHTML(juvoNumber) {
       return '<div class="result-success-stack">' +
         '<div class="result-success-top">' +
         '<p class="result-headline">You\'re all set.</p>' +
@@ -671,7 +606,7 @@ Consent is not a condition of purchase.
         '</div>' +
         '<div class="result-success-mid">' +
         '<p class="result-number-label">Your Juvo Number:</p>' +
-        '<div class="result-number-wrap"><p class="result-number">' + (leadlassoNumber || '') + '</p></div>' +
+        '<div class="result-number-wrap"><p class="result-number">' + (juvoNumber || '') + '</p></div>' +
         '</div>' +
         '<div class="result-success-bottom">' +
         '<p class="result-footer">Important: Check your email for setup instructions.</p>' +
@@ -679,12 +614,12 @@ Consent is not a condition of purchase.
         '</div>';
     }
 
-    function showSuccessPage(leadlassoNumber) {
+    function showSuccessPage(juvoNumber) {
       if (headlineSection) headlineSection.style.display = 'none';
       form.closest('.card').style.display = 'none';
       resultDiv.classList.add('result-layout-success');
       resultDiv.style.display = 'block';
-      resultDiv.innerHTML = buildSuccessHTML(leadlassoNumber);
+      resultDiv.innerHTML = buildSuccessHTML(juvoNumber);
     }
 
     (function checkSuccessRedirect() {
@@ -738,9 +673,7 @@ Consent is not a condition of purchase.
       e.preventDefault();
       const setupType = document.querySelector('input[name="setup_type"]:checked')?.value;
       const personalPhone = document.getElementById('personal_phone').value.trim();
-      const ownerSmsConsent = !!document.getElementById('owner_sms_consent')?.checked;
       const ringNumber = document.getElementById('forward_to_phone').value.trim();
-      const useDefaultMessage = document.querySelector('input[name="auto_reply_mode"]:checked')?.value === 'default';
 
       const isReplace = setupType === 'replace_number';
       const owner_phone = (isReplace && ringNumber) ? ringNumber : personalPhone;
@@ -749,13 +682,10 @@ Consent is not a condition of purchase.
       const body = {
         business_name: document.getElementById('business_name').value.trim(),
         email: document.getElementById('email').value.trim(),
-        sender_name: document.getElementById('first_name').value.trim(),
         owner_phone: owner_phone,
-        owner_sms_consent: ownerSmsConsent,
         forward_to_phone: forward_to_phone,
         preferred_area_code: document.getElementById('preferred_area_code').value.trim().replace(/\D/g, '').slice(0, 3),
-        setup_type: setupType,
-        auto_reply_template: useDefaultMessage ? null : (document.getElementById('auto_reply_template').value.trim() || null)
+        setup_type: setupType
       };
 
       try {
@@ -774,7 +704,7 @@ Consent is not a condition of purchase.
           hideOnboardingFormCard();
           resultDiv.classList.add('result-layout-success');
           resultDiv.style.display = 'block';
-          resultDiv.innerHTML = buildSuccessHTML(data.leadlasso_number || '');
+          resultDiv.innerHTML = buildSuccessHTML(data.juvo_number || '');
         } else {
           resultDiv.classList.remove('result-layout-success');
           resultDiv.style.display = 'block';

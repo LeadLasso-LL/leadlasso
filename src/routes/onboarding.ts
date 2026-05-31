@@ -20,14 +20,12 @@ const REQUIRED = ['business_name', 'email', 'owner_phone', 'setup_type', 'prefer
 export type OnboardingBody = {
   business_name?: string;
   email?: string;
-  sender_name?: string;
   owner_phone?: string;
-  /** Optional: owner consent to receive Juvo owner alerts via SMS (missed calls, customer replies, account alerts). */
   owner_sms_consent?: boolean | string;
   forward_to_phone?: string;
   setup_type?: string;
-  auto_reply_template?: string | null;
   preferred_area_code?: string;
+  industry?: string | null;
 };
 
 function parseOwnerSmsConsent(value: unknown): boolean | undefined {
@@ -63,7 +61,6 @@ export function onboardingBodyFromCheckoutMetadata(
   }
   return {
     business_name: String(metadata.business_name).trim(),
-    sender_name: metadata.sender_name ? String(metadata.sender_name).trim() : undefined,
     email,
     owner_phone: String(metadata.owner_phone).trim(),
     owner_sms_consent: metadata.owner_sms_consent != null ? String(metadata.owner_sms_consent).trim() : undefined,
@@ -73,9 +70,9 @@ export function onboardingBodyFromCheckoutMetadata(
         : undefined,
     preferred_area_code: String(metadata.preferred_area_code).trim(),
     setup_type: String(metadata.setup_type).trim(),
-    auto_reply_template:
-      metadata.auto_reply_template && String(metadata.auto_reply_template).trim() !== ''
-        ? String(metadata.auto_reply_template).trim()
+    industry:
+      metadata.industry && String(metadata.industry).trim() !== ''
+        ? String(metadata.industry).trim()
         : null,
   };
 }
@@ -94,7 +91,7 @@ function toSetupType(value: string): SetupType {
   return 'replace_number';
 }
 
-export type CreateBusinessResult = { business_id: string; leadlasso_number: string };
+export type CreateBusinessResult = { business_id: string; juvo_number: string };
 
 /**
  * Normalizes onboarding data, provisions a Twilio number, inserts the business.
@@ -122,11 +119,10 @@ export async function createBusinessWithNumber(
 
   const business_name = String(data.business_name).trim();
   const email = String(data.email).trim();
-  const sender_name = data.sender_name != null ? String(data.sender_name).trim() || null : null;
   const owner_phone = normalizePhone(String(data.owner_phone).trim());
   const forward_to_phone_raw = data.forward_to_phone != null ? String(data.forward_to_phone).trim() : '';
   const forward_to_phone = forward_to_phone_raw !== '' ? normalizePhone(forward_to_phone_raw) : null;
-  const auto_reply_template = data.auto_reply_template != null ? String(data.auto_reply_template).trim() || null : null;
+  const industry = data.industry != null ? String(data.industry).trim() || null : null;
   const preferred_area_code = String(data.preferred_area_code).trim().replace(/\D/g, '').slice(0, 3);
   const ownerSmsConsent = parseOwnerSmsConsent(data.owner_sms_consent);
 
@@ -152,11 +148,10 @@ export async function createBusinessWithNumber(
     .insert({
       email,
       business_name,
-      sender_name,
       owner_phone,
       forward_to_phone,
-      leadlasso_number: provisioned.phoneNumber,
-      auto_reply_template,
+      juvo_number: provisioned.phoneNumber,
+      industry,
       setup_type,
       plan_status: 'active',
       preferred_area_code,
@@ -174,7 +169,7 @@ export async function createBusinessWithNumber(
             }
           : {}),
     })
-    .select('id, leadlasso_number')
+    .select('id, juvo_number')
     .single();
 
   if (error) {
@@ -188,12 +183,12 @@ export async function createBusinessWithNumber(
   }
 
   const businessId = business?.id ?? '';
-  const leadlassoNumber = business?.leadlasso_number ?? provisioned.phoneNumber;
+  const juvoNumber = business?.juvo_number ?? provisioned.phoneNumber;
 
   if (businessId) {
     const authResult = await ensureAuthUserAndLinkBusiness(businessId, email);
     try {
-      await sendWelcomeEmailForOnboarding(data, leadlassoNumber, authResult.setPasswordUrl);
+      await sendWelcomeEmailForOnboarding(data, juvoNumber, authResult.setPasswordUrl);
     } catch (emailErr) {
       console.error('[email] failed', emailErr);
     }
@@ -201,7 +196,7 @@ export async function createBusinessWithNumber(
 
   return {
     business_id: businessId,
-    leadlasso_number: leadlassoNumber,
+    juvo_number: juvoNumber,
   };
 }
 
@@ -250,14 +245,13 @@ export async function handleOnboardingBusiness(req: Request, res: Response): Pro
       cancel_url: `${ONBOARDING_PAGE_ORIGIN}/onboarding.html?canceled=1`,
       metadata: {
         business_name: String(body.business_name).trim(),
-        sender_name: body.sender_name != null ? String(body.sender_name).trim() : '',
         email: String(body.email).trim(),
         owner_phone: String(body.owner_phone).trim(),
         owner_sms_consent: String(parseOwnerSmsConsent(body.owner_sms_consent) === true),
         forward_to_phone: (body.forward_to_phone != null && String(body.forward_to_phone).trim() !== '') ? String(body.forward_to_phone).trim() : '',
         preferred_area_code,
         setup_type: String(body.setup_type).trim(),
-        auto_reply_template: body.auto_reply_template != null ? String(body.auto_reply_template).trim() : '',
+        industry: body.industry != null ? String(body.industry).trim() : '',
       },
     });
 
@@ -283,7 +277,7 @@ export async function handleOnboardingBusiness(req: Request, res: Response): Pro
  * (creates + provisions Twilio via createBusinessWithNumber if needed). Does not depend on
  * webhook timing. Idempotent for the same session_id / customer.
  *
- * 200: { success: true, leadlasso_number: "+1..." }
+ * 200: { success: true, juvo_number: "+1..." }
  */
 export async function handleOnboardingSuccess(req: Request, res: Response): Promise<void> {
   try {
@@ -318,7 +312,7 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
 
     const { data: bySessionRow, error: errBySession } = await supabase
       .from('businesses')
-      .select('leadlasso_number')
+      .select('juvo_number')
       .eq('stripe_checkout_session_id', sessionId)
       .limit(1)
       .maybeSingle();
@@ -328,9 +322,9 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
       res.status(500).json({ success: false, error: 'Lookup failed' });
       return;
     }
-    if (bySessionRow?.leadlasso_number) {
+    if (bySessionRow?.juvo_number) {
       console.log('[onboarding] Success: business already exists for session', sessionId);
-      res.status(200).json({ success: true, leadlasso_number: bySessionRow.leadlasso_number });
+      res.status(200).json({ success: true, juvo_number: bySessionRow.juvo_number });
       return;
     }
 
@@ -339,7 +333,7 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
     if (customerId) {
       const { data: byCustomer, error: errCustomer } = await supabase
         .from('businesses')
-        .select('leadlasso_number, stripe_checkout_session_id')
+        .select('juvo_number, stripe_checkout_session_id')
         .eq('stripe_customer_id', customerId)
         .limit(1)
         .maybeSingle();
@@ -349,7 +343,7 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
         res.status(500).json({ success: false, error: 'Lookup failed' });
         return;
       }
-      if (byCustomer?.leadlasso_number) {
+      if (byCustomer?.juvo_number) {
         if (!byCustomer.stripe_checkout_session_id) {
           const { error: patchErr } = await supabase
             .from('businesses')
@@ -362,7 +356,7 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
           }
         }
         console.log('[onboarding] Success: business already exists for customer', customerId);
-        res.status(200).json({ success: true, leadlasso_number: byCustomer.leadlasso_number });
+        res.status(200).json({ success: true, juvo_number: byCustomer.juvo_number });
         return;
       }
     }
@@ -382,30 +376,30 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
       console.log('[onboarding] Success: business created and number assigned', {
         sessionId,
         business_id: result.business_id,
-        leadlasso_number: result.leadlasso_number,
+        juvo_number: result.juvo_number,
       });
-      res.status(200).json({ success: true, leadlasso_number: result.leadlasso_number });
+      res.status(200).json({ success: true, juvo_number: result.juvo_number });
     } catch (createErr) {
       if (isUniqueViolation(createErr)) {
         const { data: again } = await supabase
           .from('businesses')
-          .select('leadlasso_number')
+          .select('juvo_number')
           .eq('stripe_checkout_session_id', sessionId)
           .maybeSingle();
-        if (again?.leadlasso_number) {
+        if (again?.juvo_number) {
           console.log('[onboarding] Success: idempotent return after unique conflict (session)', sessionId);
-          res.status(200).json({ success: true, leadlasso_number: again.leadlasso_number });
+          res.status(200).json({ success: true, juvo_number: again.juvo_number });
           return;
         }
         if (customerId) {
           const { data: againCust } = await supabase
             .from('businesses')
-            .select('leadlasso_number')
+            .select('juvo_number')
             .eq('stripe_customer_id', customerId)
             .maybeSingle();
-          if (againCust?.leadlasso_number) {
+          if (againCust?.juvo_number) {
             console.log('[onboarding] Success: idempotent return after unique conflict (customer)', customerId);
-            res.status(200).json({ success: true, leadlasso_number: againCust.leadlasso_number });
+            res.status(200).json({ success: true, juvo_number: againCust.juvo_number });
             return;
           }
         }
