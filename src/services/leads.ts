@@ -64,7 +64,57 @@ export async function ensureCallLead(
   return null;
 }
 
-export async function upsertLeadFromRetellWebhook(input: EnsureCallLeadInput): Promise<LeadRow | null> {
+function mergeLeadFields(
+  existing: LeadRow,
+  input: EnsureCallLeadInput
+): Partial<
+  Pick<LeadRow, 'caller_name' | 'job_description' | 'recording_url' | 'transcript' | 'caller_number'>
+> {
+  const updates: Partial<
+    Pick<LeadRow, 'caller_name' | 'job_description' | 'recording_url' | 'transcript' | 'caller_number'>
+  > = {};
+
+  const name = input.callerName?.trim();
+  if (name && !existing.caller_name) updates.caller_name = name;
+
+  const job = input.jobDescription?.trim();
+  if (job && !existing.job_description) updates.job_description = job;
+
+  const recording = input.recordingUrl?.trim();
+  if (recording && !existing.recording_url) updates.recording_url = recording;
+
+  const transcript = input.transcript?.trim();
+  if (transcript && !existing.transcript) updates.transcript = transcript;
+
+  const phone = input.callerNumber?.trim();
+  if (phone && existing.caller_number !== phone) updates.caller_number = phone;
+
+  return updates;
+}
+
+export async function upsertLeadFromRetellWebhook(
+  input: EnsureCallLeadInput
+): Promise<{ row: LeadRow; inserted: boolean } | null> {
   const result = await ensureCallLead(input);
-  return result?.row ?? null;
+  if (!result) return null;
+
+  if (!result.inserted) {
+    const updates = mergeLeadFields(result.row, input);
+    if (Object.keys(updates).length > 0) {
+      const { data: updated, error } = await supabase
+        .from('leads')
+        .update(updates)
+        .eq('id', result.row.id)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('[leads] upsertLeadFromRetellWebhook update failed', error);
+        return result;
+      }
+      return { row: updated, inserted: false };
+    }
+  }
+
+  return result;
 }
