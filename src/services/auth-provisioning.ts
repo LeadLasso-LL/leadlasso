@@ -3,11 +3,7 @@
  * No secrets exposed to the browser.
  */
 import { supabase } from '../lib/supabase';
-
-function portalPublicOrigin(): string {
-  const base = process.env.PORTAL_PUBLIC_ORIGIN || 'https://start.getjuvo.io';
-  return base.replace(/\/$/, '');
-}
+import { passwordResetRedirectUrl } from './email';
 
 export type AuthProvisionResult = {
   userId: string | null;
@@ -91,7 +87,7 @@ export async function ensureAuthUserAndLinkBusiness(
 
   let setPasswordUrl: string | null = null;
   if (wasNewUser) {
-    const redirectTo = `${portalPublicOrigin()}/auth/set-password`;
+    const redirectTo = passwordResetRedirectUrl();
     const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: cleanEmail,

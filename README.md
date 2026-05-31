@@ -35,9 +35,9 @@ public/
 | `TWILIO_WEBHOOK_BASE_URL` | Public base URL for TwiML callbacks |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Backend DB |
 | `SUPABASE_ANON_KEY` | Injected into `/portal` for browser Auth + RLS |
-| `PORTAL_PUBLIC_ORIGIN` | e.g. `https://start.getjuvo.io` |
+| `PORTAL_PUBLIC_ORIGIN` | e.g. `https://getjuvo.io` (password reset + auth redirects) |
 | `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` / `STRIPE_WEBHOOK_SECRET` | Billing |
-| `RESEND_API_KEY` / `FROM_EMAIL` | Transactional email |
+| `RESEND_API_KEY` / `FROM_EMAIL` | Transactional email (`Juvo <hello@getjuvo.io>`) |
 
 Copy `.env.example` to `.env` and set values.
 

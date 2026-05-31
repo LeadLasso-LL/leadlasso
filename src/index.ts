@@ -15,7 +15,7 @@ import { handleStripeWebhook } from './webhooks/stripe';
 import { handleRetellCallEnded } from './webhooks/retell-call-ended';
 import { handlePatchLeadStatus } from './routes/leads';
 import { supabase } from './lib/supabase';
-import { sendPasswordResetEmail } from './services/email';
+import { sendPasswordResetEmail, passwordResetRedirectUrl } from './services/email';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -110,7 +110,7 @@ app.get('/auth/set-password', (_req, res) => {
 });
 
 function portalPublicOrigin(): string {
-  const base = process.env.PORTAL_PUBLIC_ORIGIN || 'https://start.getjuvo.io';
+  const base = process.env.PORTAL_PUBLIC_ORIGIN || 'https://getjuvo.io';
   return base.replace(/\/$/, '');
 }
 
@@ -118,7 +118,7 @@ app.post('/auth/request-password-reset', async (req, res) => {
   try {
     const email = String(req.body?.email ?? '').trim();
     const redirectToFromClient = String(req.body?.redirectTo ?? '').trim();
-    const redirectTo = (redirectToFromClient || `${portalPublicOrigin()}/auth/set-password`).trim();
+    const redirectTo = (redirectToFromClient || passwordResetRedirectUrl()).trim();
 
     if (!email) {
       res.status(400).json({ success: false, error: 'Email is required.' });
