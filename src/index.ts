@@ -91,6 +91,15 @@ app.get('/portal', (_req, res) => {
   }
 });
 
+app.get('/dashboard', (_req, res) => {
+  try {
+    const html = injectSupabaseAuthPlaceholders(fs.readFileSync(getDashboardTemplatePath(), 'utf8'));
+    res.type('html').send(html);
+  } catch {
+    res.status(500).type('html').send('Dashboard is not available (template missing).');
+  }
+});
+
 app.get('/auth/set-password', (_req, res) => {
   try {
     const html = injectSupabaseAuthPlaceholders(fs.readFileSync(getSetPasswordTemplatePath(), 'utf8'));
