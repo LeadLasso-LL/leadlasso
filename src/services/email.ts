@@ -49,9 +49,13 @@ function resolveFromEmail(): string {
   return process.env.FROM_EMAIL?.trim() || DEFAULT_FROM;
 }
 
+/** Canonical redirect after Supabase verify (invite / recovery / magic link). */
+export const SET_PASSWORD_REDIRECT_URL = 'https://getjuvo.io/auth/set-password';
+
 export function passwordResetRedirectUrl(): string {
-  const base = (process.env.PORTAL_PUBLIC_ORIGIN || SITE_URL).replace(/\/$/, '');
-  return `${base}/auth/set-password`;
+  const fromEnv = process.env.SET_PASSWORD_REDIRECT_URL?.trim();
+  if (fromEnv) return fromEnv;
+  return SET_PASSWORD_REDIRECT_URL;
 }
 
 function buildSetPasswordCtaBlock(setPasswordUrl: string | null | undefined): string {

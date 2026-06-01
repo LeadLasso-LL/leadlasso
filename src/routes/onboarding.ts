@@ -674,6 +674,7 @@ export async function handleOnboardingSubscribe(req: Request, res: Response): Pr
       }
 
       const redirectTo = passwordResetRedirectUrl();
+      console.log('[onboarding] subscribe generateLink redirectTo', redirectTo);
       const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
         type: 'recovery',
         email,
