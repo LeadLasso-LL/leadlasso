@@ -16,21 +16,37 @@ export const supabase: SupabaseClient = createClient(url, serviceKey, {
 });
 
 export type SetupType = 'forwarding' | 'replace_number';
+export type CallMode = 'ai_first' | 'human_first';
 export type PlanStatus = 'active' | 'inactive';
+export type OnboardingPlan = 'starter' | 'pro';
+
+export interface BusinessHoursDay {
+  open: boolean;
+  openTime?: string;
+  closeTime?: string;
+}
+
+export type BusinessHours = Record<string, BusinessHoursDay>;
 
 export interface BusinessRow {
   id: string;
   email: string | null;
   user_id: string | null;
   business_name: string;
+  first_name: string | null;
   owner_phone: string;
   forward_to_phone: string | null;
+  existing_number: string | null;
   juvo_number: string | null;
   retell_agent_id: string | null;
   industry: string | null;
+  call_mode: CallMode | null;
+  business_hours: BusinessHours | null;
+  sms_opt_in: boolean | null;
   setup_type: SetupType;
   plan_status: PlanStatus;
   stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   stripe_checkout_session_id: string | null;
   preferred_area_code: string | null;
   owner_new_lead_alerts_enabled: boolean;

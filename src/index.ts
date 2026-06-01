@@ -10,7 +10,11 @@ import {
   handleIncomingCallDialAction,
   handleIncomingCallStatusCallback,
 } from './webhooks/incoming-call';
-import { handleOnboardingBusiness, handleOnboardingSuccess } from './routes/onboarding';
+import {
+  handleOnboardingBusiness,
+  handleOnboardingSubscribe,
+  handleOnboardingSuccess,
+} from './routes/onboarding';
 import { handleStripeWebhook } from './webhooks/stripe';
 import { handleRetellCallEnded } from './webhooks/retell-call-ended';
 import { handleRetellCallStarted } from './webhooks/retell-call-started';
@@ -83,10 +87,23 @@ function getDashboardTemplatePath(): string {
   return path.join(__dirname, '..', 'templates', 'dashboard.html');
 }
 
+function getOnboardingTemplatePath(): string {
+  const inDist = path.join(__dirname, 'templates', 'onboarding.html');
+  if (fs.existsSync(inDist)) return inDist;
+  return path.join(__dirname, '..', 'templates', 'onboarding.html');
+}
+
 function injectSupabaseAuthPlaceholders(html: string): string {
   return html
     .replace('SUPABASE_URL_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_URL))
     .replace('SUPABASE_ANON_KEY_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_ANON_KEY));
+}
+
+function injectOnboardingPlaceholders(html: string): string {
+  return injectSupabaseAuthPlaceholders(html).replace(
+    'STRIPE_PUBLIC_KEY_PLACEHOLDER',
+    JSON.stringify(process.env.STRIPE_PUBLIC_KEY?.trim() || '')
+  );
 }
 
 app.get('/portal', (_req, res) => {
@@ -173,6 +190,7 @@ app.all('/webhooks/incoming-call/dial-action', handleIncomingCallDialAction);
 
 app.post('/onboarding/business', handleOnboardingBusiness);
 app.get('/onboarding/success', handleOnboardingSuccess);
+app.post('/api/onboarding/subscribe', handleOnboardingSubscribe);
 
 app.patch('/api/leads/:id/status', handlePatchLeadStatus);
 app.post('/api/support/escalate', handleSupportEscalate);

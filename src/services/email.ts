@@ -19,6 +19,7 @@ export type SendWelcomeEmailParams = {
 };
 
 const WELCOME_SUBJECT = "You're live — Your Juvo number is ready";
+const WELCOME_JUVO_SUBJECT = "You're live — here's your Juvo number";
 const PASSWORD_RESET_SUBJECT = 'Reset your Juvo password';
 
 const JUVO_GREEN = '#1B5E3B';
@@ -263,6 +264,102 @@ function buildPasswordResetText(params: SendPasswordResetEmailParams): string {
     '',
     SUPPORT_EMAIL,
   ].join('\n');
+}
+
+export type SendWelcomeJuvoEmailParams = {
+  email: string;
+  firstName: string;
+  businessName: string;
+  juvoNumber: string;
+  planLabel: string;
+  callModeLabel: string;
+  setPasswordUrl?: string | null;
+};
+
+async function loadWelcomeJuvoHtmlTemplate(): Promise<string> {
+  const fileName = 'welcome-juvo.html';
+  const searchRoots = [
+    path.join(__dirname, '..', 'emails'),
+    path.join(__dirname, '..', '..', 'emails'),
+  ];
+  let lastErr: unknown;
+  for (const root of searchRoots) {
+    try {
+      return await readFile(path.join(root, fileName), 'utf8');
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
+function fillWelcomeJuvoEmailTemplate(html: string, params: SendWelcomeJuvoEmailParams): string {
+  const replacements: Record<string, string> = {
+    '{{first_name}}': escapeHtml(params.firstName),
+    '{{business_name}}': escapeHtml(params.businessName),
+    '{{juvo_number}}': escapeHtml(params.juvoNumber),
+    '{{plan_label}}': escapeHtml(params.planLabel),
+    '{{call_mode_label}}': escapeHtml(params.callModeLabel),
+    '{{set_password_cta_block}}': buildSetPasswordCtaBlock(params.setPasswordUrl),
+  };
+  let out = html;
+  for (const [token, value] of Object.entries(replacements)) {
+    out = out.split(token).join(value);
+  }
+  return out;
+}
+
+function buildWelcomeJuvoPlainText(params: SendWelcomeJuvoEmailParams): string {
+  const lines = [
+    `Hi ${params.firstName},`,
+    '',
+    `You're live! Your Juvo AI receptionist is active for ${params.businessName}.`,
+    '',
+    `Your Juvo number: ${params.juvoNumber}`,
+    `Plan: ${params.planLabel}`,
+    `Call handling: ${params.callModeLabel}`,
+    '',
+    'Call your number now to test it — you are live.',
+    '',
+  ];
+  if (params.setPasswordUrl?.trim()) {
+    lines.push('Set your password:', params.setPasswordUrl.trim(), '');
+  }
+  lines.push(`Dashboard: ${SITE_URL}/dashboard`, SUPPORT_EMAIL);
+  return lines.join('\n');
+}
+
+export async function sendWelcomeJuvoEmail(params: SendWelcomeJuvoEmailParams): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = resolveFromEmail();
+  if (!apiKey) {
+    console.log('[email] welcome-juvo skipped — provider not configured');
+    return;
+  }
+
+  let html: string;
+  try {
+    const raw = await loadWelcomeJuvoHtmlTemplate();
+    html = fillWelcomeJuvoEmailTemplate(raw, params);
+  } catch (err) {
+    console.error('[email] welcome-juvo template failed', err);
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: fromEmail,
+    to: [params.email],
+    subject: WELCOME_JUVO_SUBJECT,
+    html,
+    text: buildWelcomeJuvoPlainText(params),
+  });
+
+  if (error) {
+    console.error('[email] welcome-juvo failed', error);
+    return;
+  }
+  console.log('[email] welcome-juvo success');
 }
 
 export async function sendPasswordResetEmail(params: SendPasswordResetEmailParams): Promise<void> {

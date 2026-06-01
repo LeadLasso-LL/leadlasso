@@ -1,15 +1,15 @@
 /**
- * POST /onboarding/business
- * Accepts onboarding form data, creates a Stripe Checkout session for $79/month.
- * After payment, Stripe webhook (checkout.session.completed) provisions the number and creates the business.
+ * POST /onboarding/business — legacy Stripe Checkout flow
+ * POST /api/onboarding/subscribe — Stripe Elements + Retell provisioning
  */
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { supabase } from '../lib/supabase';
-import type { SetupType } from '../lib/supabase';
+import type { BusinessHours, CallMode, OnboardingPlan, SetupType } from '../lib/supabase';
 import { normalizePhone } from '../lib/phone';
 import { ensureAuthUserAndLinkBusiness } from '../services/auth-provisioning';
-import { sendWelcomeEmailForOnboarding } from '../services/email';
+import { passwordResetRedirectUrl, sendWelcomeEmailForOnboarding, sendWelcomeJuvoEmail } from '../services/email';
+import { purchaseRetellPhoneNumber } from '../services/retell-provisioning';
 import { provisionLocalNumber, releaseNumber } from '../services/twilio-provisioning';
 
 /** Where users land after Stripe Checkout (must match hosted onboarding page). Not PUBLIC_BASE_URL (webhooks/TwiML). */
@@ -410,6 +410,350 @@ export async function handleOnboardingSuccess(req: Request, res: Response): Prom
     }
   } catch (err) {
     console.error('[onboarding] Success handler error', err);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+  }
+}
+
+// ── Stripe Elements subscribe flow (GET /onboarding template) ──
+
+export type SubscribeBody = {
+  business_name?: string;
+  first_name?: string;
+  email?: string;
+  owner_phone?: string;
+  preferred_area_code?: string;
+  industry?: string | null;
+  sms_opt_in?: boolean;
+  call_mode?: string;
+  existing_number?: string | null;
+  business_hours?: BusinessHours | null;
+  plan?: string;
+  payment_method_id?: string;
+};
+
+const SUBSCRIBE_REQUIRED = [
+  'business_name',
+  'first_name',
+  'email',
+  'owner_phone',
+  'preferred_area_code',
+  'call_mode',
+  'plan',
+  'payment_method_id',
+] as const;
+
+function normalizeCallMode(raw: string): CallMode | null {
+  const v = raw.trim().toLowerCase().replace(/-/g, '_');
+  if (v === 'ai_first') return 'ai_first';
+  if (v === 'human_first') return 'human_first';
+  return null;
+}
+
+function normalizePlan(raw: string): OnboardingPlan | null {
+  const v = raw.trim().toLowerCase();
+  if (v === 'starter' || v === '97') return 'starter';
+  if (v === 'pro' || v === '197') return 'pro';
+  return null;
+}
+
+function callModeToSetupType(callMode: CallMode): SetupType {
+  return callMode === 'human_first' ? 'forwarding' : 'replace_number';
+}
+
+function planLabel(plan: OnboardingPlan): string {
+  return plan === 'starter' ? 'Starter ($97/mo)' : 'Pro ($197/mo)';
+}
+
+function callModeLabel(callMode: CallMode): string {
+  return callMode === 'human_first' ? 'Human First' : 'AI First';
+}
+
+function resolveRetellAgentId(plan: OnboardingPlan, callMode: CallMode): string | null {
+  const keys: Record<string, string | undefined> = {
+    starter_ai_first: process.env.RETELL_AGENT_STARTER_AI_FIRST,
+    starter_human_first: process.env.RETELL_AGENT_STARTER_HUMAN_FIRST,
+    pro_ai_first: process.env.RETELL_AGENT_PRO_AI_FIRST,
+    pro_human_first: process.env.RETELL_AGENT_PRO_HUMAN_FIRST,
+  };
+  const key = `${plan}_${callMode}`;
+  const id = keys[key]?.trim();
+  return id || null;
+}
+
+function resolveStripePriceId(plan: OnboardingPlan): string | null {
+  const id =
+    plan === 'starter'
+      ? process.env.STRIPE_STARTER_PRICE_ID?.trim()
+      : process.env.STRIPE_PRO_PRICE_ID?.trim();
+  return id || null;
+}
+
+function parseBusinessHours(raw: unknown): BusinessHours | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  return raw as BusinessHours;
+}
+
+function subscriptionPaymentError(subscription: Stripe.Subscription): string | null {
+  const status = subscription.status;
+  if (status === 'active' || status === 'trialing') return null;
+
+  const invoice = subscription.latest_invoice;
+  if (invoice && typeof invoice === 'object' && 'payment_intent' in invoice) {
+    const pi = (invoice as Stripe.Invoice).payment_intent;
+    if (pi && typeof pi === 'object' && 'last_payment_error' in pi) {
+      const err = (pi as Stripe.PaymentIntent).last_payment_error;
+      if (err?.message) return err.message;
+    }
+  }
+
+  if (status === 'incomplete' || status === 'past_due' || status === 'unpaid') {
+    return 'Payment could not be completed. Please check your card and try again.';
+  }
+  return `Subscription status: ${status}`;
+}
+
+export async function handleOnboardingSubscribe(req: Request, res: Response): Promise<void> {
+  let provisionedPhone: string | null = null;
+
+  try {
+    const body = (req.body || {}) as SubscribeBody;
+
+    for (const key of SUBSCRIBE_REQUIRED) {
+      const val = body[key];
+      if (val === undefined || val === null || String(val).trim() === '') {
+        res.status(400).json({ success: false, error: `Missing required field: ${key}` });
+        return;
+      }
+    }
+
+    const callMode = normalizeCallMode(String(body.call_mode));
+    if (!callMode) {
+      res.status(400).json({ success: false, error: 'Invalid call_mode' });
+      return;
+    }
+
+    const plan = normalizePlan(String(body.plan));
+    if (!plan) {
+      res.status(400).json({ success: false, error: 'Invalid plan' });
+      return;
+    }
+
+    const business_name = String(body.business_name).trim();
+    const first_name = String(body.first_name).trim();
+    const email = String(body.email).trim().toLowerCase();
+    const owner_phone = normalizePhone(String(body.owner_phone).trim());
+    const preferred_area_code = String(body.preferred_area_code).trim().replace(/\D/g, '').slice(0, 3);
+    if (preferred_area_code.length !== 3) {
+      res.status(400).json({ success: false, error: 'preferred_area_code must be a valid 3-digit area code' });
+      return;
+    }
+
+    const industry =
+      body.industry != null && String(body.industry).trim() !== ''
+        ? String(body.industry).trim()
+        : null;
+
+    const sms_opt_in = body.sms_opt_in === true;
+
+    let existing_number: string | null = null;
+    if (callMode === 'human_first') {
+      const rawExisting = body.existing_number;
+      if (!rawExisting || String(rawExisting).trim() === '') {
+        res.status(400).json({
+          success: false,
+          error: 'existing_number is required when call_mode is human_first',
+        });
+        return;
+      }
+      existing_number = normalizePhone(String(rawExisting).trim());
+    }
+
+    const business_hours =
+      callMode === 'human_first' ? parseBusinessHours(body.business_hours) : null;
+
+    const paymentMethodId = String(body.payment_method_id).trim();
+    const priceId = resolveStripePriceId(plan);
+    const agentId = resolveRetellAgentId(plan, callMode);
+
+    const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
+    if (!secretKey || !priceId) {
+      console.error('[onboarding] subscribe missing STRIPE_SECRET_KEY or price id');
+      res.status(500).json({ success: false, error: 'Billing is not configured' });
+      return;
+    }
+    if (!agentId) {
+      console.error('[onboarding] subscribe missing Retell agent env for', plan, callMode);
+      res.status(500).json({ success: false, error: 'Voice agent is not configured' });
+      return;
+    }
+
+    const stripe = new Stripe(secretKey);
+    const customerName = `${first_name} — ${business_name}`;
+
+    const customer = await stripe.customers.create({
+      email,
+      name: customerName,
+      metadata: { business_name, plan, call_mode: callMode },
+    });
+
+    try {
+      await stripe.paymentMethods.attach(paymentMethodId, { customer: customer.id });
+    } catch (attachErr) {
+      const message = attachErr instanceof Error ? attachErr.message : 'Invalid payment method';
+      res.status(402).json({ success: false, error: message });
+      return;
+    }
+
+    await stripe.customers.update(customer.id, {
+      invoice_settings: { default_payment_method: paymentMethodId },
+    });
+
+    let subscription: Stripe.Subscription;
+    try {
+      subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{ price: priceId }],
+        default_payment_method: paymentMethodId,
+        payment_behavior: 'error_if_incomplete',
+        expand: ['latest_invoice.payment_intent'],
+      });
+    } catch (subErr) {
+      const message =
+        subErr instanceof Error ? subErr.message : 'Payment could not be completed';
+      console.error('[onboarding] subscribe subscription failed', subErr);
+      res.status(402).json({ success: false, error: message });
+      return;
+    }
+
+    const paymentError = subscriptionPaymentError(subscription);
+    if (paymentError) {
+      res.status(402).json({ success: false, error: paymentError });
+      return;
+    }
+
+    try {
+      const purchased = await purchaseRetellPhoneNumber({
+        areaCode: parseInt(preferred_area_code, 10),
+        agentId,
+      });
+      provisionedPhone = purchased.phoneNumber;
+    } catch (retellErr) {
+      console.error('[onboarding] subscribe Retell provision failed after payment', retellErr);
+      res.status(500).json({
+        success: false,
+        error: 'Payment succeeded but phone provisioning failed. Our team will follow up shortly.',
+        stripe_customer_id: customer.id,
+        stripe_subscription_id: subscription.id,
+      });
+      return;
+    }
+
+    let userId: string | null = null;
+    let setPasswordUrl: string | null = null;
+
+    try {
+      const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { first_name, business_name },
+      });
+
+      if (authErr) {
+        const msg = String(authErr.message || '').toLowerCase();
+        if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
+          const { data: listed } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+          const existing = listed?.users?.find((u) => u.email?.toLowerCase() === email);
+          userId = existing?.id ?? null;
+        } else {
+          console.error('[onboarding] subscribe createUser failed', authErr);
+        }
+      } else {
+        userId = authData.user?.id ?? null;
+      }
+
+      const redirectTo = passwordResetRedirectUrl();
+      const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+        type: 'recovery',
+        email,
+        options: { redirectTo },
+      });
+      if (linkErr) {
+        console.error('[onboarding] subscribe generateLink failed', linkErr);
+      } else {
+        setPasswordUrl =
+          (linkData as { properties?: { action_link?: string } })?.properties?.action_link ?? null;
+      }
+    } catch (authBlockErr) {
+      console.error('[onboarding] subscribe auth block failed', authBlockErr);
+    }
+
+    const setup_type = callModeToSetupType(callMode);
+    const forward_to_phone = callMode === 'human_first' ? existing_number : null;
+
+    try {
+      const { error: insertErr } = await supabase.from('businesses').insert({
+        email,
+        user_id: userId,
+        business_name,
+        first_name,
+        owner_phone,
+        forward_to_phone,
+        existing_number,
+        juvo_number: provisionedPhone,
+        industry,
+        call_mode: callMode,
+        business_hours,
+        sms_opt_in,
+        setup_type,
+        plan_status: 'active',
+        preferred_area_code,
+        retell_agent_id: agentId,
+        stripe_customer_id: customer.id,
+        stripe_subscription_id: subscription.id,
+        ...(sms_opt_in
+          ? {
+              owner_new_lead_alerts_enabled: true,
+              owner_customer_reply_alerts_enabled: true,
+            }
+          : {
+              owner_new_lead_alerts_enabled: false,
+              owner_customer_reply_alerts_enabled: false,
+            }),
+      });
+
+      if (insertErr) {
+        console.error('[onboarding] subscribe business insert failed', insertErr);
+      }
+    } catch (dbErr) {
+      console.error('[onboarding] subscribe business insert threw', dbErr);
+    }
+
+    try {
+      await sendWelcomeJuvoEmail({
+        email,
+        firstName: first_name,
+        businessName: business_name,
+        juvoNumber: provisionedPhone,
+        planLabel: planLabel(plan),
+        callModeLabel: callModeLabel(callMode),
+        setPasswordUrl,
+      });
+    } catch (emailErr) {
+      console.error('[onboarding] subscribe welcome email failed', emailErr);
+    }
+
+    res.status(200).json({
+      success: true,
+      phone_number: provisionedPhone,
+    });
+  } catch (err) {
+    console.error('[onboarding] subscribe error', err);
+    if (provisionedPhone) {
+      res.status(200).json({ success: true, phone_number: provisionedPhone });
+      return;
+    }
     if (!res.headersSent) {
       res.status(500).json({ success: false, error: 'Internal server error' });
     }

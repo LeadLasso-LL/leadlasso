@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Juvo — Get Started</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #1B5E3B; --green-light: #2a7a50; --green-dim: #f0f7f3;
+      --white: #ffffff; --bg: #f8f8f6; --charcoal: #1a1a1a;
+      --mid: #6b6b6b; --border: #e2e2dc; --error: #dc2626;
+    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--charcoal); min-height: 100vh; }
+    nav { background: var(--green); height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; }
+    .nav-logo span { font-size: 1.4rem; font-weight: 800; color: white; letter-spacing: -0.01em; }
+    .nav-signin { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+    .nav-signin a { color: white; font-weight: 700; text-decoration: none; margin-left: 0.3rem; }
+    .page { display: grid; grid-template-columns: 1fr 480px; min-height: calc(100vh - 64px); }
+    .left-panel { background: var(--green); padding: 4rem 3rem; display: flex; flex-direction: column; justify-content: center; position: sticky; top: 64px; height: calc(100vh - 64px); }
+    .left-tagline { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 1.5rem; }
+    .left-headline { font-size: clamp(2rem, 3vw, 2.8rem); font-weight: 800; color: white; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 2rem; }
+    .left-headline span { color: rgba(255,255,255,0.5); }
+    .left-features { display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 3rem; }
+    .left-feature { display: flex; align-items: flex-start; gap: 0.85rem; }
+    .feature-check { width: 22px; height: 22px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0; margin-top: 0.1rem; color: white; }
+    .feature-text { font-size: 0.9rem; color: rgba(255,255,255,0.85); line-height: 1.4; }
+    .feature-text strong { color: white; }
+    .left-divider { height: 1px; background: rgba(255,255,255,0.15); margin-bottom: 1.5rem; }
+    .left-pricing { display: flex; gap: 1rem; }
+    .price-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 0.75rem 1rem; flex: 1; }
+    .price-pill .plan { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+    .price-pill .amount { font-size: 1.4rem; font-weight: 800; color: white; margin: 0.2rem 0 0.1rem; }
+    .price-pill .desc { font-size: 0.72rem; color: rgba(255,255,255,0.5); }
+    .right-panel { background: var(--white); padding: 2.5rem 2rem; overflow-y: auto; }
+    .form-header { margin-bottom: 2rem; }
+    .form-header h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
+    .form-header p { font-size: 0.875rem; color: var(--mid); }
+    .progress { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 2rem; }
+    .progress-step { flex: 1; height: 3px; background: var(--border); border-radius: 2px; transition: background 0.3s; }
+    .progress-step.active, .progress-step.done { background: var(--green); }
+    .progress-label { font-size: 0.72rem; color: var(--mid); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+    .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--charcoal); }
+    .field { margin-bottom: 1.1rem; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--charcoal); margin-bottom: 0.4rem; }
+    label .optional { font-weight: 400; color: var(--mid); margin-left: 0.3rem; }
+    input[type="text"], input[type="email"], input[type="tel"], select { width: 100%; padding: 0.65rem 0.9rem; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; color: var(--charcoal); background: var(--white); outline: none; transition: border-color 0.15s; appearance: none; }
+    input:focus, select:focus { border-color: var(--green); }
+    .field-hint { font-size: 0.75rem; color: var(--mid); margin-top: 0.3rem; line-height: 1.4; }
+    .field-error { font-size: 0.75rem; color: var(--error); margin-top: 0.35rem; display: none; }
+    .field-error.visible { display: block; }
+    input.confirmed { background: #f0f7f3; border-color: #a8d5b8; color: var(--charcoal); }
+    input.confirmed:focus { border-color: var(--green); background: white; }
+    .select-wrapper { position: relative; }
+    .select-wrapper::after { content: '▾'; position: absolute; right: 0.9rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--mid); pointer-events: none; }
+    .checkbox-field { display: flex; align-items: flex-start; gap: 0.65rem; margin-bottom: 1.1rem; }
+    .checkbox-field input[type="checkbox"] { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--green); flex-shrink: 0; cursor: pointer; }
+    .checkbox-label { font-size: 0.75rem; color: var(--mid); line-height: 1.5; }
+    .checkbox-label a { color: var(--green); text-decoration: none; }
+    .mode-cards { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
+    .mode-card { border: 1.5px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; display: flex; align-items: flex-start; gap: 0.85rem; }
+    .mode-card:hover { border-color: #ccc; }
+    .mode-card.selected { border-color: var(--green); background: var(--green-dim); }
+    .mode-radio { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s; }
+    .mode-card.selected .mode-radio { border-color: var(--green); background: var(--green); }
+    .mode-card.selected .mode-radio::after { content: ''; width: 6px; height: 6px; background: white; border-radius: 50%; }
+    .mode-info h4 { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .mode-info p { font-size: 0.78rem; color: var(--mid); line-height: 1.4; }
+    .mode-card.selected .mode-info h4 { color: var(--green); }
+    .hours-grid { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem; }
+    .hours-row { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 0.75rem; }
+    .day-toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    .toggle-switch { width: 34px; height: 18px; background: var(--border); border-radius: 100px; position: relative; transition: background 0.2s; flex-shrink: 0; }
+    .toggle-switch.on { background: var(--green); }
+    .toggle-knob { width: 14px; height: 14px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .toggle-switch.on .toggle-knob { transform: translateX(16px); }
+    .day-label { font-size: 0.78rem; font-weight: 600; color: var(--charcoal); min-width: 28px; }
+    .hours-selects { display: flex; align-items: center; gap: 0.4rem; }
+    .hours-selects select { padding: 0.4rem 0.6rem; font-size: 0.75rem; flex: 1; }
+    .hours-selects span { font-size: 0.75rem; color: var(--mid); flex-shrink: 0; }
+    .hours-closed { font-size: 0.75rem; color: var(--mid); }
+    .plan-cards { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
+    .plan-card { border: 1.5px solid var(--border); border-radius: 10px; padding: 1.1rem; cursor: pointer; transition: border-color 0.15s; position: relative; }
+    .plan-card:hover { border-color: #ccc; }
+    .plan-card.selected { border-color: var(--green); background: var(--green-dim); }
+    .plan-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+    .plan-card-name { font-size: 0.88rem; font-weight: 700; }
+    .plan-card.selected .plan-card-name { color: var(--green); }
+    .plan-card-price { font-size: 1.1rem; font-weight: 800; color: var(--charcoal); }
+    .plan-card-price span { font-size: 0.75rem; font-weight: 400; color: var(--mid); }
+    .plan-card-desc { font-size: 0.78rem; color: var(--mid); line-height: 1.4; margin-bottom: 0.6rem; }
+    .plan-card-features { display: flex; flex-direction: column; gap: 0.25rem; }
+    .plan-feature { font-size: 0.75rem; color: var(--charcoal); display: flex; align-items: center; gap: 0.4rem; }
+    .plan-feature::before { content: '✓'; color: var(--green); font-weight: 700; font-size: 0.7rem; }
+    .popular-tag { background: var(--green); color: white; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 100px; }
+    #card-element { padding: 0.65rem 0.9rem; border: 1.5px solid var(--border); border-radius: 8px; background: var(--white); }
+    #card-element.StripeElement--focus { border-color: var(--green); }
+    .order-summary { background: var(--bg); border-radius: 10px; padding: 1rem; margin-bottom: 1.25rem; }
+    .order-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.5rem; }
+    .order-row.total { font-weight: 700; font-size: 0.9rem; padding-top: 0.5rem; border-top: 1px solid var(--border); margin-top: 0.5rem; margin-bottom: 0; }
+    .order-row .label { color: var(--mid); }
+    .order-row.total .label { color: var(--charcoal); }
+    .btn-primary { width: 100%; padding: 0.85rem; background: var(--green); color: white; border: none; border-radius: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.15s; margin-bottom: 0.75rem; }
+    .btn-primary:hover { background: var(--green-light); }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
+    .btn-back { width: 100%; padding: 0.75rem; background: transparent; color: var(--mid); border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .btn-back:hover { border-color: var(--green); color: var(--green); }
+    .secure-note { display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-size: 0.72rem; color: var(--mid); margin-top: 0.75rem; }
+    .success-screen { display: none; text-align: center; padding: 2rem 0; }
+    .success-icon { width: 64px; height: 64px; background: var(--green-dim); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 1.8rem; }
+    .success-screen h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+    .success-screen p { font-size: 0.875rem; color: var(--mid); margin-bottom: 1.5rem; line-height: 1.6; }
+    .phone-number-display { background: var(--green); color: white; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .phone-number-display .label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; margin-bottom: 0.4rem; }
+    .phone-number-display .number { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.02em; }
+    .phone-number-display .sub { font-size: 0.75rem; opacity: 0.7; margin-top: 0.3rem; }
+    .success-next { background: var(--bg); border-radius: 10px; padding: 1rem; text-align: left; margin-bottom: 1.25rem; }
+    .success-next h4 { font-size: 0.82rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--charcoal); }
+    .next-item { display: flex; align-items: flex-start; gap: 0.65rem; margin-bottom: 0.6rem; font-size: 0.8rem; color: var(--mid); line-height: 1.4; }
+    .next-num { width: 20px; height: 20px; background: var(--green); color: white; border-radius: 50%; font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .field-divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+    @media (max-width: 768px) { .page { grid-template-columns: 1fr; } .left-panel { display: none; } .right-panel { padding: 1.5rem; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><img src="/logo-white.png" alt="Juvo" style="height:38px;display:block;" /></div>
+  <div class="nav-signin">Already have an account? <a href="/portal">Sign in</a></div>
+</nav>
+
+<div class="page">
+  <div class="left-panel">
+    <p class="left-tagline">Get started today</p>
+    <h2 class="left-headline">Your business,<br/><span>always</span> open.</h2>
+    <div class="left-features">
+      <div class="left-feature"><div class="feature-check">✓</div><p class="feature-text"><strong>Every call answered</strong> — 24/7, 365 days a year</p></div>
+      <div class="left-feature"><div class="feature-check">✓</div><p class="feature-text"><strong>Every lead captured</strong> — name, number, job description</p></div>
+      <div class="left-feature"><div class="feature-check">✓</div><p class="feature-text"><strong>Instant notifications</strong> — know the moment a lead comes in</p></div>
+      <div class="left-feature"><div class="feature-check">✓</div><p class="feature-text"><strong>Live in minutes</strong> — your number is ready the moment you sign up</p></div>
+    </div>
+    <div class="left-divider"></div>
+    <div class="left-pricing">
+      <div class="price-pill"><p class="plan">Starter</p><p class="amount">$97<span style="font-size:0.7rem;font-weight:400;opacity:0.6">/mo</span></p><p class="desc">Lead capture</p></div>
+      <div class="price-pill"><p class="plan">Pro</p><p class="amount">$197<span style="font-size:0.7rem;font-weight:400;opacity:0.6">/mo</span></p><p class="desc">Capture + booking</p></div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="progress" id="progress">
+      <div class="progress-step active" id="step-1"></div>
+      <div class="progress-step" id="step-2"></div>
+      <div class="progress-step" id="step-3"></div>
+      <div class="progress-step" id="step-4"></div>
+    </div>
+
+    <div class="form-section active" id="section-1">
+      <div class="form-header">
+        <p class="progress-label">Step 1 of 4</p>
+        <h2>Tell us about your business</h2>
+        <p>This is how Juvo will represent you on every call.</p>
+      </div>
+      <div class="field"><label for="business-name">Business Name</label><input type="text" id="business-name" placeholder="e.g. ABC Plumbing" /></div>
+      <div class="field"><label for="first-name">Your First Name</label><input type="text" id="first-name" placeholder="e.g. Mike" /></div>
+      <div class="field"><label for="email">Email Address</label><input type="email" id="email" placeholder="e.g. mike@abcplumbing.com" /></div>
+      <div class="field"><label for="owner-phone">Your Phone Number</label><input type="tel" id="owner-phone" placeholder="(813) 555-0100" /></div>
+      <div class="field">
+        <label>Lead Alert Opt-In</label>
+        <div class="checkbox-field">
+          <input type="checkbox" id="sms-opt-in" />
+          <label class="checkbox-label" for="sms-opt-in">I agree to receive SMS lead alert notifications from Juvo at the number provided above. Message and data rates may apply. Reply STOP at any time to unsubscribe. View our <a href="/privacy">Privacy Policy</a>.</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="area-code">Preferred Area Code</label>
+        <input type="text" id="area-code" placeholder="e.g. 813" maxlength="3" style="max-width:120px;" />
+        <p class="field-hint">We'll provision your Juvo number with this area code when available.</p>
+      </div>
+      <div class="field">
+        <label for="industry">Industry <span class="optional">(optional)</span></label>
+        <div class="select-wrapper">
+          <select id="industry">
+            <option value="">Select your industry</option>
+            <option>Plumbing</option><option>HVAC</option><option>Electrical</option>
+            <option>Landscaping</option><option>Roofing</option><option>Pest Control</option>
+            <option>Cleaning Services</option><option>Locksmith</option>
+            <option>General Contracting</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <p class="field-error" id="step1-error"></p>
+      <button type="button" class="btn-primary" id="btn-step1">Continue →</button>
+    </div>
+
+    <div class="form-section" id="section-2">
+      <div class="form-header">
+        <p class="progress-label">Step 2 of 4</p>
+        <h2>How should Juvo handle calls?</h2>
+        <p>Choose how calls are routed to your Juvo AI receptionist.</p>
+      </div>
+      <div class="mode-cards">
+        <div class="mode-card selected" data-mode="ai-first" id="mode-ai-first">
+          <div class="mode-radio"></div>
+          <div class="mode-info">
+            <h4>AI First — Full Coverage</h4>
+            <p>Every call goes straight to Juvo. Your AI receptionist answers 24/7, captures every lead, and never misses a call. Recommended for maximum coverage.</p>
+          </div>
+        </div>
+        <div class="mode-card" data-mode="human-first" id="mode-human-first">
+          <div class="mode-radio"></div>
+          <div class="mode-info">
+            <h4>Human First — You Answer First</h4>
+            <p>Juvo rings your existing number first. If you don't answer within a few rings, Juvo steps in. Best of both worlds.</p>
+          </div>
+        </div>
+      </div>
+      <div id="existing-number-field" style="display:none;">
+        <div class="field">
+          <label for="existing-number">Your Existing Business Number</label>
+          <input type="tel" id="existing-number" placeholder="(813) 555-0100" />
+          <p class="field-hint">Juvo will ring this number first before the AI picks up.</p>
+        </div>
+      </div>
+      <div class="field-divider" id="hours-divider" style="display:none;"></div>
+      <div id="hours-section" style="display:none;">
+        <p class="section-title" style="font-size:0.88rem;margin-bottom:0.4rem;">Business Hours</p>
+        <p class="field-hint" style="margin-bottom:1rem;">Juvo skips the transfer attempt outside these hours and answers immediately.</p>
+      </div>
+      <div class="hours-grid" id="hours-grid" style="display:none;"></div>
+      <p class="field-error" id="step2-error"></p>
+      <button type="button" class="btn-primary" id="btn-step2">Continue →</button>
+      <button type="button" class="btn-back" id="btn-back2">← Back</button>
+    </div>
+
+    <div class="form-section" id="section-3">
+      <div class="form-header">
+        <p class="progress-label">Step 3 of 4</p>
+        <h2>Choose your plan</h2>
+        <p>Both plans include your dedicated Juvo number and full dashboard access.</p>
+      </div>
+      <div class="plan-cards">
+        <div class="plan-card" data-plan="starter" data-price="97">
+          <div class="plan-card-header"><span class="plan-card-name">Starter</span><span class="plan-card-price">$97<span>/mo</span></span></div>
+          <p class="plan-card-desc">Perfect for businesses that want every lead captured and no calls missed.</p>
+          <div class="plan-card-features">
+            <div class="plan-feature">AI voice receptionist — 24/7</div>
+            <div class="plan-feature">Lead capture — name, number, job description</div>
+            <div class="plan-feature">Instant owner notifications</div>
+            <div class="plan-feature">Lead dashboard with transcripts</div>
+          </div>
+        </div>
+        <div class="plan-card selected" data-plan="pro" data-price="197">
+          <div class="plan-card-header">
+            <span class="plan-card-name">Pro</span>
+            <div style="display:flex;align-items:center;gap:0.5rem;"><span class="popular-tag">Most Popular</span><span class="plan-card-price">$197<span>/mo</span></span></div>
+          </div>
+          <p class="plan-card-desc">For businesses that want the AI to book jobs automatically, not just capture leads.</p>
+          <div class="plan-card-features">
+            <div class="plan-feature">Everything in Starter</div>
+            <div class="plan-feature">AI calendar booking via Cal.com</div>
+            <div class="plan-feature">Industry-specific AI agent</div>
+            <div class="plan-feature">Priority support</div>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn-primary" id="btn-step3">Continue →</button>
+      <button type="button" class="btn-back" id="btn-back3">← Back</button>
+    </div>
+
+    <div class="form-section" id="section-4">
+      <div class="form-header">
+        <p class="progress-label">Step 4 of 4</p>
+        <h2>You're almost live</h2>
+        <p>Enter your payment details to activate your Juvo number instantly.</p>
+      </div>
+      <div class="order-summary">
+        <div class="order-row"><span class="label">Plan</span><span id="summary-plan">Pro Plan</span></div>
+        <div class="order-row"><span class="label">Billing</span><span>Monthly, cancel anytime</span></div>
+        <div class="order-row"><span class="label">Call Handling</span><span id="summary-mode">AI First</span></div>
+        <div class="order-row total"><span class="label">Total today</span><span id="summary-total">$197/mo</span></div>
+      </div>
+      <div class="field">
+        <label>Card details</label>
+        <div id="card-element"></div>
+        <p class="field-error" id="card-errors"></p>
+      </div>
+      <p class="field-error" id="step4-error"></p>
+      <button type="button" class="btn-primary" id="activate-btn">🔒 Activate My Juvo Number</button>
+      <button type="button" class="btn-back" id="btn-back4">← Back</button>
+      <p class="secure-note">🔒 Secured by Stripe. We never store your card details.</p>
+    </div>
+
+    <div class="success-screen" id="success-screen">
+      <div class="success-icon">🎉</div>
+      <h2>You're live!</h2>
+      <p>Your Juvo AI receptionist is active and ready to answer calls right now.</p>
+      <div class="phone-number-display">
+        <p class="label">Your New Juvo Number</p>
+        <p class="number" id="success-phone-number">—</p>
+        <p class="sub">Share this number — it's your business's new front door</p>
+      </div>
+      <div class="success-next">
+        <h4>What happens next:</h4>
+        <div class="next-item"><div class="next-num">1</div><span>Check your email — we've sent your account details and setup guide</span></div>
+        <div class="next-item"><div class="next-num">2</div><span>Create your password and log in to your Juvo dashboard</span></div>
+        <div class="next-item"><div class="next-num">3</div><span>Call your new number right now and test it out — you're live!</span></div>
+      </div>
+      <a href="/dashboard" class="btn-primary" style="display:block;text-align:center;text-decoration:none;">Go to Dashboard →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = SUPABASE_URL_PLACEHOLDER;
+  const SUPABASE_ANON_KEY = SUPABASE_ANON_KEY_PLACEHOLDER;
+  const STRIPE_PUBLIC_KEY = STRIPE_PUBLIC_KEY_PLACEHOLDER;
+
+  let currentStep = 1;
+  let selectedPlan = 'pro';
+  let selectedPlanPrice = 197;
+  let selectedMode = 'ai-first';
+  let stripe = null;
+  let cardElement = null;
+
+  const DAY_KEYS = { Mon: 'monday', Tue: 'tuesday', Wed: 'wednesday', Thu: 'thursday', Fri: 'friday', Sat: 'saturday', Sun: 'sunday' };
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const defaultOpen = [true,true,true,true,true,false,false];
+
+  function $(id) { return document.getElementById(id); }
+
+  function showFieldError(id, msg) {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('visible', Boolean(msg));
+  }
+
+  function formatPhoneDisplay(e164) {
+    const d = String(e164 || '').replace(/\D/g, '');
+    const ten = d.length === 11 && d.startsWith('1') ? d.slice(1) : d.length === 10 ? d : '';
+    if (ten.length !== 10) return e164 || '—';
+    return `(${ten.slice(0,3)}) ${ten.slice(3,6)}-${ten.slice(6)}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]').forEach(input => {
+      input.addEventListener('blur', () => {
+        if (input.value.trim().length > 0) input.classList.add('confirmed');
+      });
+      input.addEventListener('focus', () => input.classList.remove('confirmed'));
+    });
+
+    document.querySelectorAll('.mode-card').forEach(card => {
+      card.addEventListener('click', () => selectMode(card, card.dataset.mode));
+    });
+    document.querySelectorAll('.plan-card').forEach(card => {
+      card.addEventListener('click', () => selectPlan(card));
+    });
+
+    $('btn-step1').addEventListener('click', () => { if (validateStep1()) goTo(2); });
+    $('btn-step2').addEventListener('click', () => { if (validateStep2()) goTo(3); });
+    $('btn-step3').addEventListener('click', () => goTo(4));
+    $('btn-back2').addEventListener('click', () => goTo(1));
+    $('btn-back3').addEventListener('click', () => goTo(2));
+    $('btn-back4').addEventListener('click', () => goTo(3));
+    $('activate-btn').addEventListener('click', () => void activateJuvo());
+
+    buildHoursGrid();
+    initStripe();
+  });
+
+  function initStripe() {
+    if (!STRIPE_PUBLIC_KEY) {
+      console.error('[onboarding] STRIPE_PUBLIC_KEY missing');
+      return;
+    }
+    stripe = Stripe(STRIPE_PUBLIC_KEY);
+    const elements = stripe.elements();
+    cardElement = elements.create('card', {
+      style: {
+        base: {
+          fontFamily: '"Plus Jakarta Sans", sans-serif',
+          fontSize: '14px',
+          color: '#1a1a1a',
+          '::placeholder': { color: '#6b6b6b' },
+        },
+        invalid: { color: '#dc2626' },
+      },
+    });
+    cardElement.mount('#card-element');
+    cardElement.on('change', (ev) => {
+      const err = $('card-errors');
+      err.textContent = ev.error ? ev.error.message : '';
+      err.classList.toggle('visible', Boolean(ev.error));
+    });
+  }
+
+  function buildTimeOptions() {
+    const opts = [];
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const hour12 = h % 12 || 12;
+        const ampm = h < 12 ? 'AM' : 'PM';
+        opts.push(`${hour12}:${m === 0 ? '00' : '30'} ${ampm}`);
+      }
+    }
+    return opts;
+  }
+
+  function buildHoursGrid() {
+    const grid = $('hours-grid');
+    const times = buildTimeOptions();
+    const openDefault = times.indexOf('8:00 AM');
+    const closeDefault = times.indexOf('6:00 PM');
+    days.forEach((day, i) => {
+      const isOpen = defaultOpen[i];
+      const row = document.createElement('div');
+      row.className = 'hours-row';
+      row.innerHTML = `
+        <div class="day-toggle" data-day="${day}">
+          <div class="toggle-switch ${isOpen ? 'on' : ''}"><div class="toggle-knob"></div></div>
+          <span class="day-label">${day}</span>
+        </div>
+        <div class="hours-selects" id="selects-${day}">
+          ${isOpen ? `
+            <div class="select-wrapper" style="flex:1"><select>${times.map((t,idx) => `<option ${idx===openDefault?'selected':''}>${t}</option>`).join('')}</select></div>
+            <span>–</span>
+            <div class="select-wrapper" style="flex:1"><select>${times.map((t,idx) => `<option ${idx===closeDefault?'selected':''}>${t}</option>`).join('')}</select></div>
+          ` : '<span class="hours-closed">Closed</span>'}
+        </div>`;
+      grid.appendChild(row);
+      row.querySelector('.day-toggle').addEventListener('click', () => toggleDay(row.querySelector('.day-toggle')));
+    });
+  }
+
+  function toggleDay(toggle) {
+    const sw = toggle.querySelector('.toggle-switch');
+    const day = toggle.dataset.day;
+    const selects = $('selects-' + day);
+    sw.classList.toggle('on');
+    const times = buildTimeOptions();
+    const openDefault = times.indexOf('8:00 AM');
+    const closeDefault = times.indexOf('6:00 PM');
+    if (sw.classList.contains('on')) {
+      selects.innerHTML = `
+        <div class="select-wrapper" style="flex:1"><select>${times.map((t,i) => `<option ${i===openDefault?'selected':''}>${t}</option>`).join('')}</select></div>
+        <span>–</span>
+        <div class="select-wrapper" style="flex:1"><select>${times.map((t,i) => `<option ${i===closeDefault?'selected':''}>${t}</option>`).join('')}</select></div>`;
+    } else {
+      selects.innerHTML = '<span class="hours-closed">Closed</span>';
+    }
+  }
+
+  function serializeBusinessHours() {
+    const hours = {};
+    document.querySelectorAll('#hours-grid .hours-row').forEach(row => {
+      const dayLabel = row.querySelector('.day-label').textContent.trim();
+      const key = DAY_KEYS[dayLabel];
+      const sw = row.querySelector('.toggle-switch');
+      if (!sw.classList.contains('on')) {
+        hours[key] = { open: false };
+        return;
+      }
+      const selects = row.querySelectorAll('select');
+      hours[key] = { open: true, openTime: selects[0].value, closeTime: selects[1].value };
+    });
+    return hours;
+  }
+
+  function goTo(step) {
+    $('section-' + currentStep).classList.remove('active');
+    $('step-' + currentStep).classList.remove('active');
+    $('step-' + currentStep).classList.add('done');
+    currentStep = step;
+    $('section-' + step).classList.add('active');
+    $('step-' + step).classList.add('active');
+    document.querySelector('.right-panel').scrollTop = 0;
+    if (step === 4 && cardElement) cardElement.focus();
+  }
+
+  function selectMode(card, mode) {
+    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedMode = mode;
+    const human = mode === 'human-first';
+    $('existing-number-field').style.display = human ? 'block' : 'none';
+    $('hours-divider').style.display = human ? 'block' : 'none';
+    $('hours-section').style.display = human ? 'block' : 'none';
+    $('hours-grid').style.display = human ? 'flex' : 'none';
+    $('summary-mode').textContent = human ? 'Human First' : 'AI First';
+  }
+
+  function selectPlan(card) {
+    document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedPlan = card.dataset.plan;
+    selectedPlanPrice = parseInt(card.dataset.price, 10);
+    $('summary-plan').textContent = selectedPlan === 'starter' ? 'Starter Plan' : 'Pro Plan';
+    $('summary-total').textContent = `$${selectedPlanPrice}/mo`;
+  }
+
+  function validateStep1() {
+    showFieldError('step1-error', '');
+    if (!$('business-name').value.trim()) { showFieldError('step1-error', 'Business name is required.'); return false; }
+    if (!$('first-name').value.trim()) { showFieldError('step1-error', 'First name is required.'); return false; }
+    if (!$('email').value.trim()) { showFieldError('step1-error', 'Email is required.'); return false; }
+    if (!$('owner-phone').value.trim()) { showFieldError('step1-error', 'Phone number is required.'); return false; }
+    const ac = $('area-code').value.replace(/\D/g, '');
+    if (ac.length !== 3) { showFieldError('step1-error', 'Enter a valid 3-digit area code.'); return false; }
+    return true;
+  }
+
+  function validateStep2() {
+    showFieldError('step2-error', '');
+    if (selectedMode === 'human-first' && !$('existing-number').value.trim()) {
+      showFieldError('step2-error', 'Your existing business number is required for Human First mode.');
+      return false;
+    }
+    return true;
+  }
+
+  function collectPayload(paymentMethodId) {
+    const call_mode = selectedMode === 'human-first' ? 'human_first' : 'ai_first';
+    const payload = {
+      business_name: $('business-name').value.trim(),
+      first_name: $('first-name').value.trim(),
+      email: $('email').value.trim(),
+      owner_phone: $('owner-phone').value.trim(),
+      preferred_area_code: $('area-code').value.replace(/\D/g, ''),
+      industry: $('industry').value.trim() || null,
+      sms_opt_in: $('sms-opt-in').checked === true,
+      call_mode,
+      plan: selectedPlan,
+      payment_method_id: paymentMethodId,
+    };
+    if (call_mode === 'human_first') {
+      payload.existing_number = $('existing-number').value.trim();
+      payload.business_hours = serializeBusinessHours();
+    }
+    return payload;
+  }
+
+  async function activateJuvo() {
+    showFieldError('step4-error', '');
+    if (!stripe || !cardElement) {
+      showFieldError('step4-error', 'Payment is not configured. Please try again later.');
+      return;
+    }
+
+    const btn = $('activate-btn');
+    btn.disabled = true;
+    btn.textContent = 'Activating…';
+
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+      type: 'card',
+      card: cardElement,
+      billing_details: {
+        email: $('email').value.trim(),
+        name: `${$('first-name').value.trim()} ${$('business-name').value.trim()}`.trim(),
+      },
+    });
+
+    if (error) {
+      showFieldError('step4-error', error.message || 'Card validation failed.');
+      btn.disabled = false;
+      btn.textContent = '🔒 Activate My Juvo Number';
+      return;
+    }
+
+    try {
+      const resp = await fetch('/api/onboarding/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(collectPayload(paymentMethod.id)),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        showFieldError('step4-error', data.error || 'Activation failed. Please try again.');
+        btn.disabled = false;
+        btn.textContent = '🔒 Activate My Juvo Number';
+        return;
+      }
+      showSuccess(data.phone_number);
+    } catch (err) {
+      console.error('[onboarding] subscribe failed', err);
+      showFieldError('step4-error', 'Network error. Please try again.');
+      btn.disabled = false;
+      btn.textContent = '🔒 Activate My Juvo Number';
+    }
+  }
+
+  function showSuccess(phoneNumber) {
+    $('section-4').classList.remove('active');
+    $('progress').style.display = 'none';
+    $('success-screen').style.display = 'block';
+    $('success-phone-number').textContent = formatPhoneDisplay(phoneNumber);
+    document.querySelector('.right-panel').scrollTop = 0;
+  }
+</script>
+</body>
+</html>
