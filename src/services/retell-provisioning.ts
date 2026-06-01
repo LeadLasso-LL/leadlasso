@@ -13,6 +13,24 @@ export type PurchaseRetellNumberResult = {
   phoneNumberPretty: string | null;
 };
 
+function headersToRecord(headers: Headers): Record<string, string> {
+  const out: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    out[key] = value;
+  });
+  return out;
+}
+
+function redactAuthorization(headers: Record<string, string>): Record<string, string> {
+  const out = { ...headers };
+  if (out.Authorization) {
+    out.Authorization = out.Authorization.startsWith('Bearer ')
+      ? 'Bearer [REDACTED]'
+      : '[REDACTED]';
+  }
+  return out;
+}
+
 function parseRetellPhoneResponse(data: unknown): PurchaseRetellNumberResult | null {
   if (!data || typeof data !== 'object') return null;
   const row = data as Record<string, unknown>;
@@ -49,16 +67,46 @@ export async function purchaseRetellPhoneNumber(
     outbound_agent_id: params.agentId,
   };
 
-  const res = await fetch(`${RETELL_API_BASE}/create-phone-number`, {
+  const url = `${RETELL_API_BASE}/create-phone-number`;
+  const requestHeaders: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  };
+  const requestBodyRaw = JSON.stringify(body);
+
+  console.log('[retell] create-phone-number request', {
+    url,
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
+    headers: redactAuthorization(requestHeaders),
+    body,
+    bodyRaw: requestBodyRaw,
   });
 
-  const data: unknown = await res.json().catch(() => ({}));
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: requestHeaders,
+    body: requestBodyRaw,
+  });
+
+  const responseHeaders = headersToRecord(res.headers);
+  const responseBodyRaw = await res.text();
+
+  console.log('[retell] create-phone-number response', {
+    status: res.status,
+    statusText: res.statusText,
+    headers: responseHeaders,
+    body: responseBodyRaw,
+  });
+
+  let data: unknown = {};
+  if (responseBodyRaw) {
+    try {
+      data = JSON.parse(responseBodyRaw) as unknown;
+    } catch {
+      data = { _parseError: true, _raw: responseBodyRaw };
+    }
+  }
+
   if (!res.ok) {
     const message =
       data && typeof data === 'object' && 'message' in data
