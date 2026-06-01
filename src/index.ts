@@ -15,6 +15,7 @@ import { handleStripeWebhook } from './webhooks/stripe';
 import { handleRetellCallEnded } from './webhooks/retell-call-ended';
 import { handleRetellCallStarted } from './webhooks/retell-call-started';
 import { handlePatchLeadStatus } from './routes/leads';
+import { handleSupportChat, handleSupportEscalate } from './routes/support';
 import { supabase } from './lib/supabase';
 import { sendPasswordResetEmail, passwordResetRedirectUrl } from './services/email';
 
@@ -174,6 +175,8 @@ app.post('/onboarding/business', handleOnboardingBusiness);
 app.get('/onboarding/success', handleOnboardingSuccess);
 
 app.patch('/api/leads/:id/status', handlePatchLeadStatus);
+app.post('/api/support/escalate', handleSupportEscalate);
+app.post('/api/support/chat', handleSupportChat);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

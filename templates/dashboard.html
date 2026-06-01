@@ -516,6 +516,297 @@
       .expanded-grid { grid-template-columns: 1fr; }
       .lead-time { display: none; }
     }
+
+    /* ── SUPPORT CHAT WIDGET ── */
+    .chat-bubble {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 56px;
+      height: 56px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(27,94,59,0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+      z-index: 1000;
+    }
+
+    .chat-bubble:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 28px rgba(27,94,59,0.45);
+    }
+
+    .chat-bubble svg { width: 24px; height: 24px; fill: white; }
+
+    .bubble-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background: #ef4444;
+      border-radius: 50%;
+      border: 2px solid white;
+      display: none;
+    }
+
+    .chat-window {
+      position: fixed;
+      bottom: 5.5rem;
+      right: 2rem;
+      width: 380px;
+      height: 560px;
+      background: var(--white);
+      border-radius: 18px;
+      box-shadow: 0 8px 48px rgba(0,0,0,0.14);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 999;
+      transform: scale(0.92) translateY(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+    }
+
+    .chat-window.open {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .chat-header {
+      background: var(--green);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .chat-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .agent-avatar {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .agent-info h4 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .agent-status {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.8);
+      margin-top: 0.1rem;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: #4ade80;
+      border-radius: 50%;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.8);
+      cursor: pointer;
+      padding: 0.25rem;
+      font-size: 1.2rem;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+
+    .close-btn:hover { color: white; }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      scroll-behavior: smooth;
+    }
+
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .msg {
+      display: flex;
+      gap: 0.5rem;
+      max-width: 88%;
+    }
+
+    .msg.agent { align-self: flex-start; }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+    .msg-avatar {
+      width: 28px;
+      height: 28px;
+      background: var(--green-dim);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+      margin-top: auto;
+    }
+
+    .msg-bubble {
+      padding: 0.65rem 0.9rem;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .msg.agent .msg-bubble {
+      background: var(--bg);
+      color: var(--charcoal);
+      border-bottom-left-radius: 4px;
+    }
+
+    .msg.user .msg-bubble {
+      background: var(--green);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .typing {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      align-self: flex-start;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 3px;
+      background: var(--bg);
+      padding: 0.6rem 0.8rem;
+      border-radius: 14px;
+      border-bottom-left-radius: 4px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--mid);
+      border-radius: 50%;
+      animation: chat-bounce 1.2s infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes chat-bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    .escalation-card {
+      background: #fef3c7;
+      border: 1.5px solid #f59e0b;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      font-size: 0.8rem;
+      color: #92400e;
+      margin: 0.25rem 0;
+    }
+
+    .escalation-card strong { display: block; margin-bottom: 0.3rem; font-size: 0.82rem; }
+
+    .chat-input-area {
+      padding: 0.75rem;
+      border-top: 1.5px solid var(--border);
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    .chat-input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 0.85rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.85rem;
+      color: var(--charcoal);
+      resize: none;
+      outline: none;
+      max-height: 100px;
+      line-height: 1.4;
+      transition: border-color 0.15s;
+    }
+
+    .chat-input:focus { border-color: var(--green); }
+    .chat-input::placeholder { color: #b0b0a8; }
+
+    .send-btn {
+      width: 36px;
+      height: 36px;
+      background: var(--green);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .send-btn:hover { background: var(--green-light); }
+    .send-btn:disabled { background: var(--border); cursor: not-allowed; }
+    .send-btn svg { width: 16px; height: 16px; fill: white; }
+
+    .resolved-banner {
+      background: var(--green-dim);
+      border-top: 1.5px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--green);
+      font-weight: 600;
+      flex-shrink: 0;
+      display: none;
+    }
+
+    @media (max-width: 640px) {
+      .chat-window {
+        right: 1rem;
+        left: 1rem;
+        width: auto;
+        bottom: 5rem;
+        height: min(560px, calc(100vh - 6rem));
+      }
+      .chat-bubble { right: 1rem; bottom: 1rem; }
+    }
   </style>
 </head>
 <body>
@@ -612,6 +903,46 @@
         <h3>No leads yet</h3>
         <p>When Juvo captures a call, it will appear here.</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Support chat widget (all dashboard views) -->
+  <div class="chat-bubble" id="bubble" aria-label="Open support chat">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    <div class="bubble-badge" id="badge"></div>
+  </div>
+
+  <div class="chat-window" id="chatWindow" aria-label="Juvo support chat">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="agent-avatar">🤖</div>
+        <div class="agent-info">
+          <h4>Juvo Support</h4>
+          <div class="agent-status">
+            <div class="status-dot"></div>
+            <span>Online — here to help</span>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="close-btn" id="chatCloseBtn" aria-label="Close chat">✕</button>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="chat-input-area" id="inputArea">
+      <textarea
+        class="chat-input"
+        id="chatInput"
+        placeholder="Ask anything about Juvo..."
+        rows="1"
+      ></textarea>
+      <button type="button" class="send-btn" id="sendBtn" aria-label="Send message">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+
+    <div class="resolved-banner" id="resolvedBanner">
+      ✓ Support ticket sent to the Juvo team
     </div>
   </div>
 
@@ -1098,6 +1429,207 @@
       showAuthView();
     }
     authBootstrapped = true;
+
+    // ── Support chat widget ──
+    const supportMessages = [];
+    let supportIsOpen = false;
+    let supportIsLoading = false;
+    let supportConversationEnded = false;
+
+    function supportAuthHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+      return headers;
+    }
+
+    function toggleSupportChat() {
+      supportIsOpen = !supportIsOpen;
+      $('chatWindow').classList.toggle('open', supportIsOpen);
+      $('badge').style.display = 'none';
+      if (supportIsOpen && supportMessages.length === 0) {
+        setTimeout(() => addSupportAgentMessage("Hi! I'm the Juvo support assistant. How can I help you today?"), 400);
+      }
+      if (supportIsOpen) {
+        setTimeout(() => $('chatInput').focus(), 300);
+      }
+    }
+
+    function addSupportMessage(role, content, isEscalation = false) {
+      const container = $('messages');
+
+      if (isEscalation) {
+        const card = document.createElement('div');
+        card.className = 'escalation-card';
+        card.innerHTML = `<strong>🚨 Flagged for Juvo Team</strong>${escapeHtml(content)}`;
+        container.appendChild(card);
+        container.scrollTop = container.scrollHeight;
+        return;
+      }
+
+      const msg = document.createElement('div');
+      msg.className = `msg ${role}`;
+
+      if (role === 'agent') {
+        msg.innerHTML = `
+          <div class="msg-avatar">🤖</div>
+          <div class="msg-bubble">${escapeHtml(content)}</div>
+        `;
+      } else {
+        msg.innerHTML = `<div class="msg-bubble">${escapeHtml(content)}</div>`;
+      }
+
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addSupportAgentMessage(text) {
+      const escalateMatch = text.match(/ESCALATE:(\{.*\})/);
+      const resolvedMatch = text.match(/RESOLVED:(\{.*\})/);
+      const cleanText = text.replace(/ESCALATE:\{.*\}/, '').replace(/RESOLVED:\{.*\}/, '').trim();
+
+      addSupportMessage('agent', cleanText);
+
+      if (escalateMatch) {
+        try {
+          const data = JSON.parse(escalateMatch[1]);
+          addSupportMessage('agent', `Summary: "${data.summary}"`, true);
+          void handleSupportEscalation(data);
+        } catch (err) {
+          console.error('[support] escalation parse failed', err);
+        }
+      }
+
+      if (resolvedMatch) {
+        try {
+          const data = JSON.parse(resolvedMatch[1]);
+          handleSupportResolution(data);
+        } catch (err) {
+          console.error('[support] resolution parse failed', err);
+        }
+      }
+    }
+
+    async function handleSupportEscalation(data) {
+      supportConversationEnded = true;
+      $('inputArea').style.display = 'none';
+      const banner = $('resolvedBanner');
+      banner.style.display = 'block';
+      banner.textContent = '🚨 Support ticket sent to the Juvo team';
+      banner.style.background = '#fef3c7';
+      banner.style.color = '#92400e';
+      banner.style.borderTop = '1.5px solid #f59e0b';
+
+      try {
+        const resp = await fetch('/api/support/escalate', {
+          method: 'POST',
+          headers: supportAuthHeaders(),
+          body: JSON.stringify({
+            ...data,
+            business_name: currentBusiness?.business_name ?? null,
+            business_id: currentBusiness?.id ?? null,
+          }),
+        });
+        const result = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          console.error('[support] escalation failed', result);
+        } else {
+          console.log('[support] escalation sent', result);
+        }
+      } catch (err) {
+        console.error('[support] escalation request failed', err);
+      }
+    }
+
+    function handleSupportResolution(data) {
+      supportConversationEnded = true;
+      $('inputArea').style.display = 'none';
+      $('resolvedBanner').style.display = 'block';
+      console.log('[support] resolved', data);
+    }
+
+    function showSupportTyping() {
+      const container = $('messages');
+      const typing = document.createElement('div');
+      typing.className = 'typing';
+      typing.id = 'typing';
+      typing.innerHTML = `
+        <div class="msg-avatar">🤖</div>
+        <div class="typing-dots">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      `;
+      container.appendChild(typing);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function removeSupportTyping() {
+      const typing = document.getElementById('typing');
+      if (typing) typing.remove();
+    }
+
+    async function sendSupportMessage() {
+      if (supportIsLoading || supportConversationEnded) return;
+      const input = $('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      if (!accessToken) {
+        addSupportAgentMessage('Please sign in to use support chat, or email hello@getjuvo.io.');
+        return;
+      }
+
+      addSupportMessage('user', text);
+      supportMessages.push({ role: 'user', content: text });
+      input.value = '';
+      input.style.height = 'auto';
+
+      supportIsLoading = true;
+      $('sendBtn').disabled = true;
+      showSupportTyping();
+
+      try {
+        const response = await fetch('/api/support/chat', {
+          method: 'POST',
+          headers: supportAuthHeaders(),
+          body: JSON.stringify({ messages: supportMessages }),
+        });
+        const data = await response.json().catch(() => ({}));
+        const reply =
+          data.reply ||
+          (response.ok
+            ? "I'm having trouble right now. Please try again or contact hello@getjuvo.io."
+            : 'Please sign in to use support chat, or email hello@getjuvo.io.');
+
+        supportMessages.push({ role: 'assistant', content: reply });
+        removeSupportTyping();
+        addSupportAgentMessage(reply);
+      } catch (err) {
+        removeSupportTyping();
+        addSupportAgentMessage("Something went wrong on my end. Please email hello@getjuvo.io and we'll get back to you quickly.");
+        console.error('[support] chat failed', err);
+      }
+
+      supportIsLoading = false;
+      $('sendBtn').disabled = false;
+    }
+
+    function autoResizeSupportInput(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+    }
+
+    $('bubble').addEventListener('click', toggleSupportChat);
+    $('chatCloseBtn').addEventListener('click', toggleSupportChat);
+    $('sendBtn').addEventListener('click', () => void sendSupportMessage());
+    $('chatInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        void sendSupportMessage();
+      }
+    });
+    $('chatInput').addEventListener('input', (e) => autoResizeSupportInput(e.target));
   </script>
 </body>
 </html>
