@@ -21,7 +21,7 @@ import { handleRetellCallStarted } from './webhooks/retell-call-started';
 import { handlePatchLeadStatus } from './routes/leads';
 import { handleSupportChat, handleSupportEscalate } from './routes/support';
 import { supabase } from './lib/supabase';
-import { generatePasswordRecoveryLink, sendPasswordResetEmail } from './services/email';
+import { passwordResetRedirectUrl, sendPasswordResetEmail } from './services/email';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -150,17 +150,31 @@ function portalPublicOrigin(): string {
 app.post('/auth/request-password-reset', async (req, res) => {
   try {
     const email = String(req.body?.email ?? '').trim();
+    const redirectToFromClient = String(req.body?.redirectTo ?? '').trim();
+    const redirectTo = (redirectToFromClient || passwordResetRedirectUrl()).trim();
 
     if (!email) {
       res.status(400).json({ success: false, error: 'Email is required.' });
       return;
     }
 
-    const { actionLink, error: linkErr } = await generatePasswordRecoveryLink(email);
+    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo },
+    });
 
-    if (linkErr || !actionLink) {
+    if (linkErr) {
       console.error('[auth reset] generateLink failed', linkErr);
-      res.status(400).json({ success: false, error: linkErr || 'Could not create reset link.' });
+      res
+        .status(400)
+        .json({ success: false, error: String(linkErr.message || 'Could not create reset link.') });
+      return;
+    }
+
+    const actionLink = (linkData as { properties?: { action_link?: string } })?.properties?.action_link;
+    if (!actionLink) {
+      res.status(500).json({ success: false, error: 'Reset link generation failed.' });
       return;
     }
 

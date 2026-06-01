@@ -500,6 +500,9 @@
     const appView = $('app-view');
     const claimFailView = $('claim-fail-view');
 
+    /** Password reset email redirects here (must match Supabase Auth redirect allow list). */
+    const PASSWORD_RESET_REDIRECT_TO = `${window.location.origin}/auth/set-password`;
+
     const authLoginPanel = $('auth-login-panel');
     const authResetPanel = $('auth-reset-panel');
     const resetFormBlock = $('reset-form-block');
@@ -561,7 +564,7 @@
         const resp = await fetch('/auth/request-password-reset', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, redirectTo: PASSWORD_RESET_REDIRECT_TO }),
         });
         const data = await resp.json().catch(function () { return {}; });
         if (!resp.ok) {

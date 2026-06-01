@@ -3,7 +3,7 @@
  * No secrets exposed to the browser.
  */
 import { supabase } from '../lib/supabase';
-import { generatePasswordRecoveryLink } from './email';
+import { passwordResetRedirectUrl } from './email';
 
 export type AuthProvisionResult = {
   userId: string | null;
@@ -87,11 +87,18 @@ export async function ensureAuthUserAndLinkBusiness(
 
   let setPasswordUrl: string | null = null;
   if (wasNewUser) {
-    const { actionLink, error: linkErr } = await generatePasswordRecoveryLink(cleanEmail);
+    const redirectTo = passwordResetRedirectUrl();
+    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: cleanEmail,
+      options: { redirectTo },
+    });
+
     if (linkErr) {
       console.error('[auth setup] generateLink failed', linkErr);
     } else {
-      setPasswordUrl = actionLink;
+      const actionLink = (linkData as { properties?: { action_link?: string } })?.properties?.action_link;
+      setPasswordUrl = actionLink ?? null;
     }
   }
 
