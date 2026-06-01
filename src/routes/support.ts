@@ -119,8 +119,17 @@ export async function handleSupportEscalate(req: Request, res: Response): Promis
 
 export async function handleSupportChat(req: Request, res: Response): Promise<void> {
   try {
+    console.log('[support] chat request', {
+      hasAuthorizationHeader: Boolean(req.headers.authorization),
+      authorizationPreview: req.headers.authorization
+        ? `${String(req.headers.authorization).slice(0, 20)}...`
+        : null,
+      contentType: req.headers['content-type'],
+    });
+
     const user = await getBearerUser(req);
     if (!user) {
+      console.warn('[support] chat unauthorized — bearer verification failed');
       res.status(401).json({ success: false, error: 'Unauthorized' });
       return;
     }

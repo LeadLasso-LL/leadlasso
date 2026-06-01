@@ -1304,6 +1304,12 @@
         return;
       }
       accessToken = session.access_token;
+      console.log('[dashboard] openDashboard session', {
+        uid: session.user?.id,
+        email: session.user?.email,
+        hasToken: Boolean(accessToken),
+        tokenPreview: accessToken ? `${accessToken.slice(0, 12)}... (len=${accessToken.length})` : null,
+      });
 
       let claimRaw = null;
       if (!dashboardClaimRanThisSession) {
@@ -1315,7 +1321,6 @@
 
       const { data: udata } = await supabase.auth.getUser();
       const uid = udata?.user?.id;
-      console.log('[dashboard] openDashboard session', { uid, email: udata?.user?.email });
       if (!uid) {
         authView.classList.add('hidden');
         claimFailView.classList.remove('hidden');
@@ -1417,6 +1422,12 @@
         showAuthView();
         return;
       }
+      accessToken = session.access_token;
+      console.log('[dashboard] auth state change', {
+        event,
+        hasToken: Boolean(accessToken),
+        tokenPreview: accessToken ? `${accessToken.slice(0, 12)}... (len=${accessToken.length})` : null,
+      });
       if (event === 'SIGNED_IN') {
         await openDashboard();
       }
@@ -1436,9 +1447,37 @@
     let supportIsLoading = false;
     let supportConversationEnded = false;
 
-    function supportAuthHeaders() {
+    async function resolveAccessToken() {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('[support] getSession failed', error);
+      }
+      if (session?.access_token) {
+        accessToken = session.access_token;
+        return accessToken;
+      }
+
+      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+      if (refreshErr) {
+        console.error('[support] refreshSession failed', refreshErr);
+      }
+      accessToken = refreshed.session?.access_token ?? null;
+      return accessToken;
+    }
+
+    async function supportAuthHeaders() {
+      const token = await resolveAccessToken();
       const headers = { 'Content-Type': 'application/json' };
-      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      console.log('[support] client auth headers', {
+        hasToken: Boolean(token),
+        tokenPreview: token ? `${token.slice(0, 12)}... (len=${token.length})` : null,
+        authorizationHeader: headers.Authorization
+          ? `${headers.Authorization.slice(0, 24)}...`
+          : null,
+      });
       return headers;
     }
 
@@ -1522,7 +1561,7 @@
       try {
         const resp = await fetch('/api/support/escalate', {
           method: 'POST',
-          headers: supportAuthHeaders(),
+          headers: await supportAuthHeaders(),
           body: JSON.stringify({
             ...data,
             business_name: currentBusiness?.business_name ?? null,
@@ -1575,7 +1614,8 @@
       const text = input.value.trim();
       if (!text) return;
 
-      if (!accessToken) {
+      const token = await resolveAccessToken();
+      if (!token) {
         addSupportAgentMessage('Please sign in to use support chat, or email hello@getjuvo.io.');
         return;
       }
@@ -1590,17 +1630,34 @@
       showSupportTyping();
 
       try {
+        const headers = await supportAuthHeaders();
+        console.log('[support] POST /api/support/chat', {
+          messageCount: supportMessages.length,
+          hasAuthorizationHeader: Boolean(headers.Authorization),
+        });
         const response = await fetch('/api/support/chat', {
           method: 'POST',
-          headers: supportAuthHeaders(),
+          headers,
           body: JSON.stringify({ messages: supportMessages }),
         });
         const data = await response.json().catch(() => ({}));
-        const reply =
-          data.reply ||
-          (response.ok
-            ? "I'm having trouble right now. Please try again or contact hello@getjuvo.io."
-            : 'Please sign in to use support chat, or email hello@getjuvo.io.');
+        console.log('[support] chat response', {
+          status: response.status,
+          ok: response.ok,
+          error: data.error,
+        });
+        let reply = data.reply;
+        if (!reply) {
+          if (response.status === 401) {
+            reply = 'Your session expired. Please refresh the page and sign in again.';
+          } else if (response.status === 503) {
+            reply = 'Support chat is temporarily unavailable. Email hello@getjuvo.io for help.';
+          } else if (response.ok) {
+            reply = "I'm having trouble right now. Please try again or contact hello@getjuvo.io.";
+          } else {
+            reply = data.error || 'Something went wrong. Please try again or email hello@getjuvo.io.';
+          }
+        }
 
         supportMessages.push({ role: 'assistant', content: reply });
         removeSupportTyping();
