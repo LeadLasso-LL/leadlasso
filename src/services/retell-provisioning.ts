@@ -1,5 +1,6 @@
 /**
  * Purchase a US phone number from Retell and bind inbound/outbound agents.
+ * @see https://docs.retellai.com/api-references/update-phone-number
  */
 const RETELL_API_BASE = 'https://api.retellai.com';
 
@@ -28,8 +29,50 @@ function parseRetellPhoneResponse(data: unknown): PurchaseRetellNumberResult | n
   return { phoneNumber: phone, phoneNumberPretty: pretty };
 }
 
+function retellErrorMessage(data: unknown, fallback: string): string {
+  if (data && typeof data === 'object' && 'message' in data) {
+    const msg = (data as { message?: string }).message;
+    if (msg) return String(msg);
+  }
+  return fallback;
+}
+
+function formatAreaCode(areaCode: number): string {
+  const digits = String(areaCode).replace(/\D/g, '').slice(0, 3);
+  if (digits.length !== 3) {
+    throw new Error('area_code must be a valid 3-digit US area code');
+  }
+  return digits;
+}
+
+async function bindRetellPhoneAgents(
+  apiKey: string,
+  phoneNumber: string,
+  agentId: string
+): Promise<void> {
+  const encoded = encodeURIComponent(phoneNumber);
+  const res = await fetch(`${RETELL_API_BASE}/update-phone-number/${encoded}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      inbound_agents: [{ agent_id: agentId, weight: 1 }],
+      outbound_agents: [{ agent_id: agentId, weight: 1 }],
+    }),
+  });
+
+  const data: unknown = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = retellErrorMessage(data, res.statusText) || 'Retell agent bind failed';
+    console.error('[retell] phone agent bind failed', { status: res.status, message });
+    throw new Error(message);
+  }
+}
+
 /**
- * Tries documented create-phone-number first, then v2 purchase path from product spec.
+ * POST /purchase-phone-number with { area_code: "813" }, then bind agents on the number.
  */
 export async function purchaseRetellPhoneNumber(
   params: PurchaseRetellNumberParams
@@ -39,48 +82,32 @@ export async function purchaseRetellPhoneNumber(
     throw new Error('RETELL_API_KEY not configured');
   }
 
-  const body = {
-    area_code: params.areaCode,
-    country_code: 'US',
-    number_provider: 'twilio',
-    inbound_agents: [{ agent_id: params.agentId, weight: 1 }],
-    outbound_agents: [{ agent_id: params.agentId, weight: 1 }],
-    inbound_agent_id: params.agentId,
-    outbound_agent_id: params.agentId,
-  };
+  const area_code = formatAreaCode(params.areaCode);
 
-  const endpoints = ['/create-phone-number', '/v2/phone-numbers/purchase'];
-  let lastError = 'Retell phone purchase failed';
+  const res = await fetch(`${RETELL_API_BASE}/purchase-phone-number`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ area_code }),
+  });
 
-  for (const path of endpoints) {
-    const res = await fetch(`${RETELL_API_BASE}${path}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data: unknown = await res.json().catch(() => ({}));
-    if (res.ok) {
-      const parsed = parseRetellPhoneResponse(data);
-      if (parsed) {
-        console.log('[retell] phone purchased', { path, phone: parsed.phoneNumber });
-        return parsed;
-      }
-      lastError = 'Retell returned an unexpected response';
-      continue;
-    }
-
-    const message =
-      data && typeof data === 'object' && 'message' in data
-        ? String((data as { message?: string }).message)
-        : res.statusText;
-    lastError = message || lastError;
-    if (res.status === 404) continue;
-    console.error('[retell] phone purchase failed', { path, status: res.status, message });
+  const data: unknown = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = retellErrorMessage(data, res.statusText) || 'Retell phone purchase failed';
+    console.error('[retell] phone purchase failed', { status: res.status, message });
+    throw new Error(message);
   }
 
-  throw new Error(lastError);
+  const parsed = parseRetellPhoneResponse(data);
+  if (!parsed) {
+    throw new Error('Retell returned an unexpected response');
+  }
+
+  console.log('[retell] phone purchased', { phone: parsed.phoneNumber, area_code });
+
+  await bindRetellPhoneAgents(apiKey, parsed.phoneNumber, params.agentId);
+
+  return parsed;
 }
