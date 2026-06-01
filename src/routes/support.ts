@@ -7,7 +7,7 @@ import { Resend } from 'resend';
 import { getBearerUser, getBusinessForUser } from '../lib/auth';
 import { twilioClient } from '../lib/twilio';
 
-const SUPPORT_EMAIL = 'hello@getjuvo.io';
+const SUPPORT_EMAIL = 'contact@getjuvo.io';
 
 const SUPPORT_SYSTEM_PROMPT = `You are a friendly, knowledgeable support assistant for Juvo — an AI receptionist SaaS for home service businesses (plumbers, HVAC, electricians, landscapers, etc.).
 
