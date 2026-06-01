@@ -1564,6 +1564,7 @@
           headers: await supportAuthHeaders(),
           body: JSON.stringify({
             ...data,
+            messages: supportMessages,
             business_name: currentBusiness?.business_name ?? null,
             business_id: currentBusiness?.id ?? null,
           }),

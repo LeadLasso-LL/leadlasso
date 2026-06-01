@@ -45,12 +45,29 @@ type EscalationBody = {
   needs_human?: boolean;
   business_name?: string;
   business_id?: string;
+  messages?: ChatMessage[];
 };
 
 type ChatMessage = { role: string; content: string };
 
 function resolveFromEmail(): string {
   return process.env.FROM_EMAIL?.trim() || 'Juvo <hello@getjuvo.io>';
+}
+
+function formatTranscript(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .filter((m: unknown) => m && typeof m === 'object')
+    .map((m: { role?: unknown; content?: unknown }) => ({
+      role: String(m.role ?? '').toLowerCase(),
+      content: String(m.content ?? '').trim(),
+    }))
+    .filter((m) => m.content)
+    .map((m) => {
+      const prefix = m.role === 'assistant' ? 'Juvo Support:' : 'Customer:';
+      return `${prefix} ${m.content}`;
+    });
 }
 
 export async function handleSupportEscalate(req: Request, res: Response): Promise<void> {
@@ -76,20 +93,26 @@ export async function handleSupportEscalate(req: Request, res: Response): Promis
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {
       const resend = new Resend(resendKey);
+      const transcriptLines = formatTranscript(body.messages);
+      const emailText = [
+        `Juvo support escalation (${label}): ${summary}`,
+        '',
+        'Transcript:',
+        ...(transcriptLines.length ? transcriptLines : ['(no transcript provided)']),
+        '',
+        `Resolved: ${body.resolved ? 'yes' : 'no'}`,
+        `Needs human: ${body.needs_human !== false ? 'yes' : 'no'}`,
+        businessId ? `Business ID: ${businessId}` : '',
+        user.email ? `User: ${user.email}` : '',
+      ]
+        .filter((line): line is string => typeof line === 'string')
+        .join('\n');
+
       const { error } = await resend.emails.send({
         from: resolveFromEmail(),
         to: [SUPPORT_EMAIL],
         subject: `Support escalation — ${label}`,
-        text: [
-          `Juvo support escalation (${label}): ${summary}`,
-          '',
-          `Resolved: ${body.resolved ? 'yes' : 'no'}`,
-          `Needs human: ${body.needs_human !== false ? 'yes' : 'no'}`,
-          businessId ? `Business ID: ${businessId}` : '',
-          user.email ? `User: ${user.email}` : '',
-        ]
-          .filter(Boolean)
-          .join('\n'),
+        text: emailText,
       });
       if (error) {
         console.error('[support] escalation email failed', error);
