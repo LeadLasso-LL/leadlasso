@@ -133,6 +133,15 @@ app.get('/auth/set-password', (_req, res) => {
   }
 });
 
+app.get('/onboarding', (_req, res) => {
+  try {
+    const html = injectOnboardingPlaceholders(fs.readFileSync(getOnboardingTemplatePath(), 'utf8'));
+    res.type('html').send(html);
+  } catch {
+    res.status(500).type('html').send('Onboarding is not available (template missing).');
+  }
+});
+
 function portalPublicOrigin(): string {
   const base = process.env.PORTAL_PUBLIC_ORIGIN || 'https://getjuvo.io';
   return base.replace(/\/$/, '');
