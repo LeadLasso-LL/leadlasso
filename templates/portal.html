@@ -3,69 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Juvo — Admin</title>
+  <title>Juvo — Sign in</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #1B5E3B;
+      --green-light: #2a7a50;
+      --white: #ffffff;
+      --bg: #f8f8f6;
+      --charcoal: #1a1a1a;
+      --mid: #6b6b6b;
+      --border: #e8e8e4;
+      --error: #dc2626;
+    }
+
     body {
-      margin: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--green);
+      color: var(--charcoal);
       min-height: 100vh;
-      background: linear-gradient(180deg, #E13C3C 0%, #DB7676 100%);
-      font-family: 'Inter', -apple-system, sans-serif;
-      color: #fff;
-      padding: 2rem 1.25rem 3rem;
       -webkit-font-smoothing: antialiased;
     }
-    h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; color: #fff; margin: 0 0 0.5rem; }
-    h1 { font-size: 1.75rem; letter-spacing: -0.02em; }
-    h2 { font-size: 1.25rem; }
-    .page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; max-width: 1120px; margin-left: auto; margin-right: auto; }
-    .sub { font-size: 0.9375rem; color: #fff; opacity: 0.88; margin: 0; line-height: 1.45; }
+
+    nav {
+      background: var(--green);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      padding: 0 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .page-wrap {
+      padding: 2.5rem 1.5rem 3rem;
+    }
+
+    .app-shell {
+      padding: 2rem 1.5rem 3rem;
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      color: var(--charcoal);
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.15rem; }
+
+    .page-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .sub {
+      font-size: 0.875rem;
+      color: var(--mid);
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .welcome-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--green);
+      background: #f0f7f3;
+      padding: 0.3rem 0.65rem;
+      border-radius: 100px;
+      margin-bottom: 0.75rem;
+    }
+
     .card {
-      background: rgba(255, 255, 255, 0.12);
-      backdrop-filter: blur(12px);
-      border-radius: 16px;
-      padding: 1.75rem 1.5rem;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 1.75rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     }
     .field { margin-bottom: 1.5rem; }
     .field:last-child { margin-bottom: 0; }
     .field-label {
       display: block;
-      font-weight: 500;
-      font-size: 0.9375rem;
-      margin-bottom: 0.375rem;
-      color: #fff;
+      font-weight: 600;
+      font-size: 0.8rem;
+      margin-bottom: 0.35rem;
+      color: var(--charcoal);
     }
     .field-helper {
-      font-size: 0.8125rem;
-      color: #fff;
-      opacity: 0.78;
-      margin-top: 0.375rem;
+      font-size: 0.75rem;
+      color: var(--mid);
+      margin-top: 0.35rem;
       line-height: 1.45;
     }
     input[type="text"], input[type="email"], input[type="password"], input[type="tel"], textarea {
       width: 100%;
-      padding: 0.75rem 1rem;
+      padding: 0.65rem 0.85rem;
       font-family: inherit;
-      font-size: 0.9375rem;
-      color: #fff;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      border-radius: 10px;
+      font-size: 0.9rem;
+      color: var(--charcoal);
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      transition: border-color 0.15s;
     }
-    input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, 0.5); }
+    input::placeholder, textarea::placeholder { color: #a3a3a3; }
     input:focus, textarea:focus {
       outline: none;
-      border-color: rgba(255, 255, 255, 0.5);
-      background: rgba(255, 255, 255, 0.18);
+      border-color: var(--green);
     }
     input:disabled, textarea:disabled {
-      opacity: 0.85;
+      opacity: 0.7;
       cursor: not-allowed;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--bg);
     }
     textarea { min-height: 120px; resize: vertical; }
     input[type="checkbox"] {
@@ -73,7 +143,7 @@
       height: 1.125rem;
       margin: 0;
       flex-shrink: 0;
-      accent-color: #E13C3C;
+      accent-color: var(--green);
       cursor: pointer;
     }
     .notify-option {
@@ -85,9 +155,9 @@
     .notify-option:last-child { margin-bottom: 0; }
     .notify-option label {
       cursor: pointer;
-      font-weight: 500;
-      font-size: 0.9375rem;
-      color: #fff;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--charcoal);
       line-height: 1.35;
       margin: 0;
     }
@@ -96,24 +166,30 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0.75rem 1.25rem;
+      padding: 0.7rem 1rem;
       font-family: inherit;
-      font-size: 0.9375rem;
-      font-weight: 500;
-      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border-radius: 8px;
       border: none;
       cursor: pointer;
-      transition: opacity 0.2s, transform 0.05s;
+      transition: background 0.15s, opacity 0.15s;
+      text-decoration: none;
     }
-    .btn:active { transform: scale(0.99); }
-    .btn-primary { background: #fff; color: #E13C3C; }
-    .btn-primary:hover { opacity: 0.95; }
+    .btn-primary {
+      background: var(--green);
+      color: var(--white);
+    }
+    .btn-primary:hover { background: var(--green-light); }
     .btn-ghost {
-      background: rgba(255, 255, 255, 0.18);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: transparent;
+      color: var(--green);
+      border: 1.5px solid var(--border);
     }
-    .btn-ghost:hover { background: rgba(255, 255, 255, 0.26); }
+    .btn-ghost:hover {
+      border-color: var(--green);
+      background: var(--bg);
+    }
     .btn-small { padding: 0.5rem 0.875rem; font-size: 0.8125rem; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .grid {
@@ -133,9 +209,9 @@
       flex-direction: column;
       gap: 0.625rem;
       padding: 1rem 1.125rem;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 12px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
     }
     .lead-row-top {
       width: 100%;
@@ -161,14 +237,14 @@
       border-radius: 8px;
       transition: background-color 0.18s ease;
     }
-    .lead-expand-btn:hover { background: rgba(255, 255, 255, 0.08); }
+    .lead-expand-btn:hover { background: rgba(27, 94, 59, 0.06); }
     .lead-expand-btn:focus-visible {
-      outline: 2px solid rgba(255, 255, 255, 0.75);
+      outline: 2px solid var(--green);
       outline-offset: 2px;
     }
     .lead-meta { display: flex; flex-direction: column; gap: 0.25rem; }
-    .lead-phone { font-weight: 600; font-size: 1rem; color: #fff; }
-    .lead-date { font-size: 0.8125rem; color: #fff; opacity: 0.82; }
+    .lead-phone { font-weight: 700; font-size: 1rem; color: var(--charcoal); }
+    .lead-date { font-size: 0.8125rem; color: var(--mid); }
     .lead-right {
       display: inline-flex;
       align-items: center;
@@ -177,28 +253,27 @@
     }
     .lead-chevron {
       font-size: 0.75rem;
-      color: #fff;
-      opacity: 0.86;
+      color: var(--mid);
       transition: transform 0.18s ease;
       transform-origin: center;
     }
     .lead-expand-btn[aria-expanded="true"] .lead-chevron { transform: rotate(180deg); }
     .badge {
       display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.72rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
       padding: 0.25rem 0.5rem;
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.2);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: #f0f7f3;
+      color: var(--green);
+      border: 1px solid #c8e6d4;
     }
-    .badge-booked { background: rgba(255, 255, 255, 0.28); }
+    .badge-booked { background: var(--green); color: var(--white); border-color: var(--green); }
     .lead-thread {
-      background: rgba(0, 0, 0, 0.14);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: var(--white);
+      border: 1.5px solid var(--border);
       border-radius: 10px;
       padding: 0.75rem;
     }
@@ -213,8 +288,7 @@
     .lead-thread-state {
       font-size: 0.8125rem;
       line-height: 1.45;
-      color: #fff;
-      opacity: 0.88;
+      color: var(--mid);
       margin: 0;
       text-align: center;
       padding: 0.5rem 0.25rem;
@@ -238,84 +312,92 @@
       overflow-wrap: anywhere;
     }
     .thread-bubble-customer {
-      background: rgba(255, 255, 255, 0.14);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      color: #fff;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      color: var(--charcoal);
     }
     .thread-bubble-owner {
-      background: rgba(255, 255, 255, 0.9);
-      color: #b12f2f;
-      border: 1px solid rgba(255, 255, 255, 0.95);
+      background: var(--green);
+      color: var(--white);
+      border: 1px solid var(--green);
     }
     .thread-bubble-system {
-      background: rgba(255, 255, 255, 0.09);
-      border: 1px dashed rgba(255, 255, 255, 0.3);
-      color: #fff;
-      opacity: 0.94;
+      background: var(--bg);
+      border: 1px dashed var(--border);
+      color: var(--mid);
       text-align: center;
       max-width: 100%;
     }
     .thread-time {
       font-size: 0.6875rem;
-      color: #fff;
-      opacity: 0.72;
+      color: var(--mid);
       line-height: 1.2;
       padding: 0 0.25rem;
     }
-    .empty-state { font-size: 0.9375rem; color: #fff; opacity: 0.85; margin: 0; line-height: 1.5; }
-    .error-inline { font-size: 0.8125rem; color: #fff; margin-top: 0.5rem; font-weight: 500; }
+    .empty-state { font-size: 0.875rem; color: var(--mid); margin: 0; line-height: 1.5; }
+    .error-inline { font-size: 0.82rem; color: var(--error); margin-top: 0.5rem; font-weight: 500; line-height: 1.4; }
     .success-banner {
       font-size: 0.875rem;
-      color: #fff;
+      color: var(--green);
       margin-bottom: 1rem;
       padding: 0.625rem 0.875rem;
-      background: rgba(255, 255, 255, 0.15);
+      background: #f0f7f3;
       border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.25);
+      border: 1px solid #c8e6d4;
     }
     .preview-box {
       font-size: 0.875rem;
-      color: #fff;
+      color: var(--charcoal);
       line-height: 1.5;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 10px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
       padding: 1rem;
       margin-top: 0.5rem;
       white-space: pre-wrap;
     }
-    .count-row { display: flex; justify-content: space-between; align-items: center; margin-top: 0.375rem; font-size: 0.8125rem; color: #fff; opacity: 0.85; }
+    .count-row { display: flex; justify-content: space-between; align-items: center; margin-top: 0.375rem; font-size: 0.8125rem; color: var(--mid); }
     .settings-save-confirm {
       margin: 0.75rem 0 0;
       text-align: center;
-      font-size: 0.9375rem;
-      font-weight: 500;
-      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--green);
       line-height: 1.4;
     }
     .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
-    #auth-view, #app-view, #claim-fail-view { max-width: 420px; margin: 0 auto; }
-    #app-view { max-width: 1120px; }
+    #auth-view, #claim-fail-view {
+      max-width: 420px;
+      margin: 0 auto;
+    }
     .hidden { display: none !important; }
-    .submit-wrap { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid rgba(255, 255, 255, 0.15); }
+    .submit-wrap { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
     .auth-link-wrap { text-align: center; margin-top: 0.875rem; }
     .btn-link {
       background: none;
       border: none;
-      color: #fff;
+      color: var(--green);
       text-decoration: underline;
       cursor: pointer;
       font-family: inherit;
       font-size: 0.875rem;
+      font-weight: 600;
       padding: 0;
-      opacity: 0.9;
     }
-    .btn-link:hover { opacity: 1; }
+    .btn-link:hover { color: var(--green-light); }
   </style>
 </head>
 <body>
+  <nav>
+    <a href="/" class="nav-logo">
+      <img src="/logo-white.png" alt="Juvo" style="height:36px;display:block;" />
+    </a>
+  </nav>
+
+  <div class="page-wrap">
   <div id="auth-view" class="card">
-    <h1>Juvo Admin</h1>
+    <span class="welcome-badge">Juvo Portal</span>
+    <h1>Sign in</h1>
 
     <div id="auth-login-panel">
       <p class="sub">Sign in with the same email and password you use for Juvo. Set your password from the link in your welcome email if you haven’t yet.</p>
@@ -354,10 +436,11 @@
   <div id="claim-fail-view" class="card hidden">
     <h1>We couldn’t find your account</h1>
     <p class="sub">No Juvo business is linked to this email yet. Use the same email as checkout, or contact support.</p>
-    <button type="button" class="btn btn-ghost" id="btn-signout-fail" style="margin-top:1rem;">Sign out</button>
+    <button type="button" class="btn btn-ghost" id="btn-signout-fail" style="margin-top:1rem;width:100%;">Sign out</button>
+  </div>
   </div>
 
-  <div id="app-view" class="hidden">
+  <div id="app-view" class="app-shell hidden">
     <header class="page-head">
       <div>
         <h1>Juvo Admin</h1>
@@ -416,9 +499,6 @@
     const authView = $('auth-view');
     const appView = $('app-view');
     const claimFailView = $('claim-fail-view');
-
-    /** Password reset email redirects here (must match Supabase Auth redirect allow list). */
-    const PASSWORD_RESET_REDIRECT_TO = 'https://getjuvo.io/auth/set-password';
 
     const authLoginPanel = $('auth-login-panel');
     const authResetPanel = $('auth-reset-panel');
@@ -481,7 +561,7 @@
         const resp = await fetch('/auth/request-password-reset', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, redirectTo: PASSWORD_RESET_REDIRECT_TO }),
+          body: JSON.stringify({ email }),
         });
         const data = await resp.json().catch(function () { return {}; });
         if (!resp.ok) {

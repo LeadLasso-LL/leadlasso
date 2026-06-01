@@ -9,7 +9,12 @@ import { supabase } from '../lib/supabase';
 import type { BusinessHours, CallMode, OnboardingPlan, SetupType } from '../lib/supabase';
 import { normalizePhone } from '../lib/phone';
 import { ensureAuthUserAndLinkBusiness } from '../services/auth-provisioning';
-import { passwordResetRedirectUrl, sendWelcomeEmailForOnboarding, sendWelcomeJuvoEmail } from '../services/email';
+import {
+  generatePasswordRecoveryLink,
+  passwordResetRedirectUrl,
+  sendWelcomeEmailForOnboarding,
+  sendWelcomeJuvoEmail,
+} from '../services/email';
 import { purchaseRetellPhoneNumber } from '../services/retell-provisioning';
 import { provisionLocalNumber, releaseNumber } from '../services/twilio-provisioning';
 
@@ -559,15 +564,11 @@ async function provisionSignupPasswordLink(
     const { data: listed } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
     const existing = listed?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
 
-    const recovery = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: { redirectTo },
-    });
-    if (!recovery.error && recovery.data) {
+    const recovery = await generatePasswordRecoveryLink(email);
+    if (!recovery.error && recovery.actionLink) {
       return {
-        userId: existing?.id ?? extractUserIdFromLinkData(recovery.data),
-        setPasswordUrl: extractActionLink(recovery.data),
+        userId: existing?.id ?? null,
+        setPasswordUrl: recovery.actionLink,
       };
     }
     console.error('[onboarding] recovery generateLink failed', recovery.error);

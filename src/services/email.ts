@@ -4,6 +4,7 @@
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { Resend } from 'resend';
+import { supabase } from '../lib/supabase';
 import type { OnboardingBody } from '../routes/onboarding';
 
 export type WelcomeEmailSetupType = 'replace_number' | 'forwarding';
@@ -56,6 +57,35 @@ export function passwordResetRedirectUrl(): string {
   const fromEnv = process.env.SET_PASSWORD_REDIRECT_URL?.trim();
   if (fromEnv) return fromEnv;
   return SET_PASSWORD_REDIRECT_URL;
+}
+
+/** Admin recovery link — user opens action_link, Supabase redirects to set-password. */
+export async function generatePasswordRecoveryLink(
+  email: string
+): Promise<{ actionLink: string | null; error: string | null }> {
+  const cleanEmail = email.trim();
+  if (!cleanEmail) {
+    return { actionLink: null, error: 'Email is required.' };
+  }
+
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: 'recovery',
+    email: cleanEmail,
+    options: { redirectTo: passwordResetRedirectUrl() },
+  });
+
+  if (error) {
+    return { actionLink: null, error: error.message || 'Could not create reset link.' };
+  }
+
+  const actionLink =
+    (data as { properties?: { action_link?: string } })?.properties?.action_link?.trim() ?? null;
+
+  if (!actionLink) {
+    return { actionLink: null, error: 'Reset link generation failed.' };
+  }
+
+  return { actionLink, error: null };
 }
 
 /** CTA for welcome-juvo.html (white card background). */
