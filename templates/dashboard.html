@@ -668,9 +668,15 @@
       return digits.slice(-2) || '??';
     }
 
+    function normalizeStatus(status) {
+      const s = String(status || 'new').trim().toLowerCase();
+      return STATUS_OPTIONS.includes(s) ? s : 'new';
+    }
+
     function statusLabel(status) {
-      if (status === 'no_lead') return 'No Lead';
-      return status.charAt(0).toUpperCase() + status.slice(1);
+      const s = normalizeStatus(status);
+      if (s === 'no_lead') return 'No Lead';
+      return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
     function formatPhoneDisplay(phone) {
@@ -767,37 +773,44 @@
     }
 
     function renderLeads() {
+      console.log('[dashboard] renderLeads', { count: allLeads.length, leads: allLeads });
       leadsListEl.innerHTML = '';
+
       if (!allLeads.length) {
         leadsEmptyEl.classList.remove('hidden');
         updateStats();
         return;
       }
+
       leadsEmptyEl.classList.add('hidden');
       updateStats();
 
+      let rendered = 0;
       for (const row of allLeads) {
-        const card = document.createElement('div');
-        card.className = 'lead-card';
-        card.dataset.status = row.status;
-        card.dataset.leadId = row.id;
+        try {
+          const status = normalizeStatus(row.status);
+          const card = document.createElement('div');
+          card.className = 'lead-card';
+          card.dataset.status = status;
+          card.dataset.leadId = row.id;
 
-        const displayName = row.caller_name || 'Unknown caller';
-        const jobText = row.job_description || 'No description provided';
-        const telHref = `tel:${row.caller_number}`;
+          const displayName = row.caller_name || 'Unknown caller';
+          const jobText = row.job_description || 'No description provided';
+          const callerNumber = row.caller_number || '';
+          const telHref = callerNumber ? `tel:${callerNumber}` : '#';
 
-        card.innerHTML = `
+          card.innerHTML = `
           <div class="lead-main">
             <div class="lead-left">
-              <div class="lead-avatar">${escapeHtml(callerInitials(row.caller_name, row.caller_number))}</div>
+              <div class="lead-avatar">${escapeHtml(callerInitials(row.caller_name, callerNumber))}</div>
               <div class="lead-info">
                 <p class="lead-name">${escapeHtml(displayName)}</p>
                 <p class="lead-details">${escapeHtml(jobText)}</p>
               </div>
             </div>
             <div class="lead-right">
-              <span class="lead-time">${escapeHtml(formatRelativeTime(row.created_at))}</span>
-              <span class="status-badge status-${escapeHtml(row.status)}">${escapeHtml(statusLabel(row.status))}</span>
+              <span class="lead-time">${escapeHtml(row.created_at ? formatRelativeTime(row.created_at) : 'Unknown')}</span>
+              <span class="status-badge status-${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span>
               <span class="expand-icon">▼</span>
             </div>
           </div>
@@ -809,7 +822,9 @@
               </div>
               <div class="expanded-field">
                 <label>Callback Number</label>
-                <a href="${escapeHtml(telHref)}" onclick="event.stopPropagation()">${escapeHtml(formatPhoneDisplay(row.caller_number))}</a>
+                ${callerNumber
+                  ? `<a href="${escapeHtml(telHref)}" onclick="event.stopPropagation()">${escapeHtml(formatPhoneDisplay(callerNumber))}</a>`
+                  : '<p>Not provided</p>'}
               </div>
               <div class="expanded-field">
                 <label>Job Description</label>
@@ -817,67 +832,135 @@
               </div>
               <div class="expanded-field">
                 <label>Called At</label>
-                <p>${escapeHtml(formatCalledAt(row.created_at))}</p>
+                <p>${escapeHtml(row.created_at ? formatCalledAt(row.created_at) : 'Unknown')}</p>
               </div>
             </div>
             <p class="transcript-label">Call Transcript</p>
             <div class="transcript-box">${row.transcript ? escapeHtml(row.transcript) : 'No transcript available.'}</div>
             <div class="expanded-actions">
               <select class="status-select">
-                ${STATUS_OPTIONS.map((s) => `<option value="${s}"${s === row.status ? ' selected' : ''}>${statusLabel(s)}</option>`).join('')}
+                ${STATUS_OPTIONS.map((s) => `<option value="${s}"${s === status ? ' selected' : ''}>${statusLabel(s)}</option>`).join('')}
               </select>
-              <a href="${escapeHtml(telHref)}" class="btn-call" onclick="event.stopPropagation()">📞 Call Back</a>
+              ${callerNumber
+                ? `<a href="${escapeHtml(telHref)}" class="btn-call" onclick="event.stopPropagation()">📞 Call Back</a>`
+                : ''}
             </div>
           </div>
         `;
 
-        card.addEventListener('click', () => toggleLead(card));
+          card.addEventListener('click', () => toggleLead(card));
 
-        const select = card.querySelector('.status-select');
-        select.addEventListener('click', (e) => e.stopPropagation());
-        select.addEventListener('change', async (e) => {
-          e.stopPropagation();
-          const newStatus = select.value;
-          const prevStatus = row.status;
-          select.disabled = true;
-          try {
-            await patchLeadStatus(row.id, newStatus);
-            row.status = newStatus;
-            card.dataset.status = newStatus;
-            const badge = card.querySelector('.status-badge');
-            badge.className = `status-badge status-${newStatus}`;
-            badge.textContent = statusLabel(newStatus);
-            updateStats();
-            applyFilter();
-          } catch (err) {
-            console.error(err);
-            select.value = prevStatus;
-            alert(err.message || 'Could not update status. Try again.');
-          } finally {
-            select.disabled = false;
-          }
-        });
+          const select = card.querySelector('.status-select');
+          select.addEventListener('click', (e) => e.stopPropagation());
+          select.addEventListener('change', async (e) => {
+            e.stopPropagation();
+            const newStatus = select.value;
+            const prevStatus = status;
+            select.disabled = true;
+            try {
+              await patchLeadStatus(row.id, newStatus);
+              row.status = newStatus;
+              card.dataset.status = newStatus;
+              const badge = card.querySelector('.status-badge');
+              badge.className = `status-badge status-${newStatus}`;
+              badge.textContent = statusLabel(newStatus);
+              updateStats();
+              applyFilter();
+            } catch (err) {
+              console.error('[dashboard] status update failed', err);
+              select.value = prevStatus;
+              alert(err.message || 'Could not update status. Try again.');
+            } finally {
+              select.disabled = false;
+            }
+          });
 
-        leadsListEl.appendChild(card);
+          leadsListEl.appendChild(card);
+          rendered += 1;
+        } catch (err) {
+          console.error('[dashboard] failed to render lead row', { row, err });
+        }
       }
 
+      console.log('[dashboard] renderLeads done', { rendered, total: allLeads.length });
       applyFilter();
     }
 
     async function loadLeads(businessId) {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('id, caller_name, caller_number, job_description, transcript, recording_url, status, created_at')
-        .eq('business_id', businessId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[dashboard] load leads failed', error);
+      const bid = String(businessId || '').trim();
+      if (!bid) {
+        console.error('[dashboard] loadLeads called without business_id');
+        allLeads = [];
+        renderLeads();
         return;
       }
 
-      allLeads = data || [];
+      console.log('[dashboard] loadLeads query', {
+        business_id: bid,
+        table: 'leads',
+        filter: `business_id = ${bid}`,
+      });
+
+      const { data, error, status, statusText } = await supabase
+        .from('leads')
+        .select('id, business_id, caller_name, caller_number, job_description, transcript, recording_url, status, created_at')
+        .eq('business_id', bid)
+        .order('created_at', { ascending: false });
+
+      console.log('[dashboard] loadLeads response', {
+        business_id: bid,
+        error,
+        status,
+        statusText,
+        count: data?.length ?? 0,
+        leads: data,
+      });
+
+      if (error) {
+        console.error('[dashboard] load leads failed', error);
+        allLeads = [];
+        renderLeads();
+        return;
+      }
+
+      allLeads = Array.isArray(data) ? data : [];
       renderLeads();
+    }
+
+    async function resolveBusiness(uid, claimRaw) {
+      console.log('[dashboard] claim_business_for_current_user', { claimRaw });
+
+      if (claimRaw?.ok && claimRaw.business_id) {
+        const { data: claimed, error: claimedErr } = await supabase
+          .from('businesses')
+          .select('id, business_name')
+          .eq('id', claimRaw.business_id)
+          .maybeSingle();
+        console.log('[dashboard] business from claim', { claimed, claimedErr });
+        if (claimed) return claimed;
+      }
+
+      let business = null;
+      let lastErr = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
+        const { data, error } = await supabase
+          .from('businesses')
+          .select('id, business_name')
+          .eq('user_id', uid)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        lastErr = error;
+        console.log('[dashboard] business lookup attempt', { attempt, data, error });
+        if (data) {
+          business = data;
+          break;
+        }
+      }
+
+      if (lastErr) console.error('[dashboard] business lookup failed', lastErr);
+      return business;
     }
 
     async function openDashboard() {
@@ -888,33 +971,24 @@
       }
       accessToken = session.access_token;
 
+      let claimRaw = null;
       if (!dashboardClaimRanThisSession) {
         dashboardClaimRanThisSession = true;
-        await supabase.rpc('claim_business_for_current_user');
+        const { data, error: claimErr } = await supabase.rpc('claim_business_for_current_user');
+        claimRaw = data;
+        if (claimErr) console.error('[dashboard] claim failed', claimErr);
       }
 
       const { data: udata } = await supabase.auth.getUser();
       const uid = udata?.user?.id;
+      console.log('[dashboard] openDashboard session', { uid, email: udata?.user?.email });
       if (!uid) {
         authView.classList.add('hidden');
         claimFailView.classList.remove('hidden');
         return;
       }
 
-      let business = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
-        const { data, error } = await supabase
-          .from('businesses')
-          .select('id, business_name')
-          .eq('user_id', uid)
-          .maybeSingle();
-        if (error) console.error(error);
-        if (data) {
-          business = data;
-          break;
-        }
-      }
+      const business = await resolveBusiness(uid, claimRaw);
 
       if (!business) {
         authView.classList.add('hidden');
@@ -930,6 +1004,7 @@
       $('nav-business-name').textContent = business.business_name || 'Your business';
       $('nav-avatar-initials').textContent = businessInitials(business.business_name);
 
+      console.log('[dashboard] loading leads for business', business);
       await loadLeads(business.id);
     }
 
