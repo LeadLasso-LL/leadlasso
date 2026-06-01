@@ -5,7 +5,6 @@
 import { Request, Response } from 'express';
 import { Resend } from 'resend';
 import { getBearerUser, getBusinessForUser } from '../lib/auth';
-import { twilioClient } from '../lib/twilio';
 
 const SUPPORT_EMAIL = 'contact@getjuvo.io';
 
@@ -73,17 +72,6 @@ export async function handleSupportEscalate(req: Request, res: Response): Promis
     const businessName = String(body.business_name ?? business?.business_name ?? '').trim();
     const businessId = String(body.business_id ?? business?.id ?? '').trim();
     const label = businessName || user.email || 'Unknown business';
-    const smsBody = `Juvo support escalation (${label}): ${summary}`;
-
-    const supportPhone = process.env.SUPPORT_PHONE?.trim();
-    const smsFrom = process.env.TWILIO_SUPPORT_FROM?.trim();
-
-    if (supportPhone && smsFrom) {
-      await twilioClient.messages.create({ from: smsFrom, to: supportPhone, body: smsBody });
-      console.log('[support] escalation SMS sent');
-    } else {
-      console.warn('[support] skip SMS — set SUPPORT_PHONE and TWILIO_SUPPORT_FROM');
-    }
 
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {
@@ -93,7 +81,7 @@ export async function handleSupportEscalate(req: Request, res: Response): Promis
         to: [SUPPORT_EMAIL],
         subject: `Support escalation — ${label}`,
         text: [
-          smsBody,
+          `Juvo support escalation (${label}): ${summary}`,
           '',
           `Resolved: ${body.resolved ? 'yes' : 'no'}`,
           `Needs human: ${body.needs_human !== false ? 'yes' : 'no'}`,
