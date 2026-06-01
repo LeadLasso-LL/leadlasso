@@ -2,6 +2,7 @@
  * POST /onboarding/business — legacy Stripe Checkout flow
  * POST /api/onboarding/subscribe — Stripe Elements + Retell provisioning
  */
+import { randomBytes } from 'crypto';
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { supabase } from '../lib/supabase';
@@ -495,6 +496,88 @@ function parseBusinessHours(raw: unknown): BusinessHours | null {
   return raw as BusinessHours;
 }
 
+type GenerateLinkResponse = {
+  user?: { id?: string };
+  properties?: { action_link?: string };
+};
+
+function extractActionLink(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+  const link = (data as GenerateLinkResponse).properties?.action_link;
+  return link?.trim() || null;
+}
+
+function extractUserIdFromLinkData(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+  return (data as GenerateLinkResponse).user?.id ?? null;
+}
+
+/**
+ * Creates auth user via signup link (longer-lived) and returns Supabase action_link for welcome email.
+ */
+function randomInitialPassword(): string {
+  return randomBytes(24).toString('base64url');
+}
+
+async function provisionSignupPasswordLink(
+  email: string,
+  metadata: { first_name: string; business_name: string }
+): Promise<{ userId: string | null; setPasswordUrl: string | null }> {
+  const redirectTo = passwordResetRedirectUrl();
+
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: 'signup',
+    email,
+    password: randomInitialPassword(),
+    options: {
+      redirectTo,
+      data: metadata,
+    },
+  });
+
+  if (!error && data) {
+    const setPasswordUrl = extractActionLink(data);
+    console.log('[onboarding] signup generateLink ok', {
+      userId: extractUserIdFromLinkData(data),
+      hasActionLink: Boolean(setPasswordUrl),
+    });
+    return {
+      userId: extractUserIdFromLinkData(data),
+      setPasswordUrl,
+    };
+  }
+
+  const errMsg = String(error?.message || '').toLowerCase();
+  const userExists =
+    errMsg.includes('already') ||
+    errMsg.includes('registered') ||
+    errMsg.includes('exists') ||
+    error?.status === 422;
+
+  if (userExists) {
+    console.log('[onboarding] signup generateLink user exists, falling back to recovery link');
+    const { data: listed } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const existing = listed?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+
+    const recovery = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo },
+    });
+    if (!recovery.error && recovery.data) {
+      return {
+        userId: existing?.id ?? extractUserIdFromLinkData(recovery.data),
+        setPasswordUrl: extractActionLink(recovery.data),
+      };
+    }
+    console.error('[onboarding] recovery generateLink failed', recovery.error);
+    return { userId: existing?.id ?? null, setPasswordUrl: null };
+  }
+
+  console.error('[onboarding] signup generateLink failed', error);
+  return { userId: null, setPasswordUrl: null };
+}
+
 function subscriptionPaymentError(subscription: Stripe.Subscription): string | null {
   const status = subscription.status;
   if (status === 'active' || status === 'trialing') return null;
@@ -654,37 +737,14 @@ export async function handleOnboardingSubscribe(req: Request, res: Response): Pr
     let setPasswordUrl: string | null = null;
 
     try {
-      const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: { first_name, business_name },
+      const authResult = await provisionSignupPasswordLink(email, {
+        first_name,
+        business_name,
       });
-
-      if (authErr) {
-        const msg = String(authErr.message || '').toLowerCase();
-        if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
-          const { data: listed } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
-          const existing = listed?.users?.find((u) => u.email?.toLowerCase() === email);
-          userId = existing?.id ?? null;
-        } else {
-          console.error('[onboarding] subscribe createUser failed', authErr);
-        }
-      } else {
-        userId = authData.user?.id ?? null;
-      }
-
-      const redirectTo = passwordResetRedirectUrl();
-      console.log('[onboarding] subscribe generateLink redirectTo', redirectTo);
-      const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
-        type: 'recovery',
-        email,
-        options: { redirectTo },
-      });
-      if (linkErr) {
-        console.error('[onboarding] subscribe generateLink failed', linkErr);
-      } else {
-        setPasswordUrl =
-          (linkData as { properties?: { action_link?: string } })?.properties?.action_link ?? null;
+      userId = authResult.userId;
+      setPasswordUrl = authResult.setPasswordUrl;
+      if (!setPasswordUrl) {
+        console.warn('[onboarding] subscribe missing action_link for welcome email');
       }
     } catch (authBlockErr) {
       console.error('[onboarding] subscribe auth block failed', authBlockErr);

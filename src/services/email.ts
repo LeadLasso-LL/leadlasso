@@ -58,6 +58,27 @@ export function passwordResetRedirectUrl(): string {
   return SET_PASSWORD_REDIRECT_URL;
 }
 
+/** CTA for welcome-juvo.html (white card background). */
+function buildWelcomeJuvoSetPasswordCtaBlock(setPasswordUrl: string | null | undefined): string {
+  const url = setPasswordUrl?.trim();
+  if (!url) return '';
+  const href = escapeHtmlAttr(url);
+  const label = 'Set your password';
+  return [
+    '<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:4px 0 0 0;">',
+    '<tr><td style="padding:0 0 8px 0;">',
+    '<p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b6b6b;">Dashboard access</p>',
+    '</td></tr>',
+    '<tr><td align="center">',
+    `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 24px;font-family:Inter,Arial,sans-serif;font-size:14px;font-weight:700;line-height:1.4;color:#ffffff;text-decoration:none;background-color:${JUVO_GREEN};border-radius:8px;">${label}</a>`,
+    '</td></tr>',
+    '<tr><td style="padding:10px 0 0 0;">',
+    `<p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:12px;line-height:1.45;color:#6b6b6b;">Use this secure link to create your password, then sign in at <a href="${escapeHtmlAttr(SITE_URL)}/dashboard" style="color:${JUVO_GREEN};font-weight:600;">${SITE_URL}/dashboard</a>.</p>`,
+    '</td></tr>',
+    '</table>',
+  ].join('');
+}
+
 function buildSetPasswordCtaBlock(setPasswordUrl: string | null | undefined): string {
   const url = setPasswordUrl?.trim();
   if (!url) return '';
@@ -304,7 +325,7 @@ function fillWelcomeJuvoEmailTemplate(html: string, params: SendWelcomeJuvoEmail
     '{{juvo_number}}': escapeHtml(params.juvoNumber),
     '{{plan_label}}': escapeHtml(params.planLabel),
     '{{call_mode_label}}': escapeHtml(params.callModeLabel),
-    '{{set_password_cta_block}}': buildSetPasswordCtaBlock(params.setPasswordUrl),
+    '{{set_password_cta_block}}': buildWelcomeJuvoSetPasswordCtaBlock(params.setPasswordUrl),
   };
   let out = html;
   for (const [token, value] of Object.entries(replacements)) {
