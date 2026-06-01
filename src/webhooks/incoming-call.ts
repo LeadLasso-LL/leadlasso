@@ -1,7 +1,7 @@
 /**
  * POST /webhooks/incoming-call
  *
- * Twilio voice URL: route replace_number calls to forward_to_phone; forwarding mode rejects leg.
+ * Twilio voice URL: route replace_number calls to existing_number (or owner_phone); forwarding mode rejects leg.
  * Missed-call lead rows are created from the final status callback only.
  */
 import { Request, Response } from 'express';
@@ -49,8 +49,8 @@ function buildDialTwiml(dialDestination: string): string {
 }
 
 function getReplaceNumberDialDestination(business: BusinessRow): string {
-  const ft = business.forward_to_phone?.trim();
-  if (ft) return normalizePhone(ft);
+  const existing = business.existing_number?.trim();
+  if (existing) return normalizePhone(existing);
   return normalizePhone(business.owner_phone);
 }
 

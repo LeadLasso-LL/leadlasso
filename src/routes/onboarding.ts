@@ -122,7 +122,8 @@ export async function createBusinessWithNumber(
   const email = String(data.email).trim();
   const owner_phone = normalizePhone(String(data.owner_phone).trim());
   const forward_to_phone_raw = data.forward_to_phone != null ? String(data.forward_to_phone).trim() : '';
-  const forward_to_phone = forward_to_phone_raw !== '' ? normalizePhone(forward_to_phone_raw) : null;
+  const existing_number =
+    forward_to_phone_raw !== '' ? normalizePhone(forward_to_phone_raw) : null;
   const industry = data.industry != null ? String(data.industry).trim() || null : null;
   const preferred_area_code = String(data.preferred_area_code).trim().replace(/\D/g, '').slice(0, 3);
   const ownerSmsConsent = parseOwnerSmsConsent(data.owner_sms_consent);
@@ -150,7 +151,7 @@ export async function createBusinessWithNumber(
       email,
       business_name,
       owner_phone,
-      forward_to_phone,
+      existing_number,
       juvo_number: provisioned.phoneNumber,
       industry,
       setup_type,
@@ -751,7 +752,6 @@ export async function handleOnboardingSubscribe(req: Request, res: Response): Pr
     }
 
     const setup_type = callModeToSetupType(callMode);
-    const forward_to_phone = callMode === 'human_first' ? existing_number : null;
 
     try {
       const { error: insertErr } = await supabase.from('businesses').insert({
@@ -760,7 +760,6 @@ export async function handleOnboardingSubscribe(req: Request, res: Response): Pr
         business_name,
         first_name,
         owner_phone,
-        forward_to_phone,
         existing_number,
         juvo_number: provisionedPhone,
         industry,

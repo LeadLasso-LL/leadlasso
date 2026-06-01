@@ -35,7 +35,6 @@ export interface BusinessRow {
   business_name: string;
   first_name: string | null;
   owner_phone: string;
-  forward_to_phone: string | null;
   existing_number: string | null;
   juvo_number: string | null;
   retell_agent_id: string | null;
