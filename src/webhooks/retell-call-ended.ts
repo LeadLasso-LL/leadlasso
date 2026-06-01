@@ -105,21 +105,22 @@ export async function handleRetellCallEnded(req: Request, res: Response): Promis
 
   const callId = asString(call.call_id);
   const fromNumber = asString(call.from_number);
+  const toNumber = asString(call.to_number);
   if (!callId || !fromNumber) {
     console.error('[retell] missing call_id or from_number', { callId, fromNumber });
     res.status(200).send();
     return;
   }
 
-  const business = await findBusinessForRetellCall(
-    asString(call.agent_id) ?? undefined,
-    asString(call.to_number) ?? undefined
-  );
+  if (!toNumber) {
+    console.error('[retell] missing to_number — cannot match business', { callId });
+    res.status(200).send();
+    return;
+  }
+
+  const business = await findBusinessForRetellCall(toNumber);
   if (!business) {
-    console.error('[retell] no business for agent/to_number', {
-      agent_id: call.agent_id,
-      to_number: call.to_number,
-    });
+    console.error('[retell] no business for to_number → juvo_number', { to_number: toNumber });
     res.status(200).send();
     return;
   }
