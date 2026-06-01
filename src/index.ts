@@ -13,6 +13,7 @@ import {
 import { handleOnboardingBusiness, handleOnboardingSuccess } from './routes/onboarding';
 import { handleStripeWebhook } from './webhooks/stripe';
 import { handleRetellCallEnded } from './webhooks/retell-call-ended';
+import { handleRetellCallStarted } from './webhooks/retell-call-started';
 import { handlePatchLeadStatus } from './routes/leads';
 import { supabase } from './lib/supabase';
 import { sendPasswordResetEmail, passwordResetRedirectUrl } from './services/email';
@@ -53,6 +54,11 @@ app.post(
   '/webhooks/retell-call-ended',
   express.raw({ type: 'application/json' }),
   handleRetellCallEnded
+);
+app.post(
+  '/webhooks/retell-call-started',
+  express.raw({ type: 'application/json' }),
+  handleRetellCallStarted
 );
 
 app.use(express.urlencoded({ extended: true }));
