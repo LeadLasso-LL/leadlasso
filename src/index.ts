@@ -94,9 +94,14 @@ function getOnboardingTemplatePath(): string {
 }
 
 function injectSupabaseAuthPlaceholders(html: string): string {
+  const url = process.env.SUPABASE_URL?.trim() ?? '';
+  const anon = process.env.SUPABASE_ANON_KEY?.trim() ?? '';
+  if (!url || !anon) {
+    console.error('[templates] SUPABASE_URL and SUPABASE_ANON_KEY must be set for auth pages');
+  }
   return html
-    .replace('SUPABASE_URL_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_URL))
-    .replace('SUPABASE_ANON_KEY_PLACEHOLDER', JSON.stringify(process.env.SUPABASE_ANON_KEY));
+    .replaceAll('SUPABASE_URL_PLACEHOLDER', JSON.stringify(url))
+    .replaceAll('SUPABASE_ANON_KEY_PLACEHOLDER', JSON.stringify(anon));
 }
 
 function injectOnboardingPlaceholders(html: string): string {
