@@ -311,7 +311,8 @@
         <div class="next-item"><div class="next-num">2</div><span>Create your password and log in to your Juvo dashboard</span></div>
         <div class="next-item"><div class="next-num">3</div><span>Call your new number right now and test it out — you're live!</span></div>
       </div>
-      <a href="https://getjuvo.io/auth/set-password" class="btn-primary" style="display:block;text-align:center;text-decoration:none;">Set Your Password →</a>
+      <a id="success-set-password-link" href="/portal" class="btn-primary hidden" style="display:block;text-align:center;text-decoration:none;">Set Your Password →</a>
+      <p id="success-set-password-hint" class="sub" style="margin-top:1rem;">Use the <strong>Set your password</strong> link in your welcome email to create your dashboard login.</p>
     </div>
   </div>
 </div>
@@ -586,7 +587,7 @@
         btn.textContent = '🔒 Activate My Juvo Number';
         return;
       }
-      showSuccess(data.phone_number);
+      showSuccess(data.phone_number, data.set_password_url);
     } catch (err) {
       console.error('[onboarding] subscribe failed', err);
       showFieldError('step4-error', 'Network error. Please try again.');
@@ -595,11 +596,24 @@
     }
   }
 
-  function showSuccess(phoneNumber) {
+  function showSuccess(phoneNumber, setPasswordUrl) {
     $('section-4').classList.remove('active');
     $('progress').style.display = 'none';
     $('success-screen').style.display = 'block';
     $('success-phone-number').textContent = formatPhoneDisplay(phoneNumber);
+    const link = $('success-set-password-link');
+    const hint = $('success-set-password-hint');
+    const url = typeof setPasswordUrl === 'string' ? setPasswordUrl.trim() : '';
+    if (url) {
+      link.href = url;
+      link.classList.remove('hidden');
+      link.style.display = 'block';
+      hint.classList.add('hidden');
+    } else {
+      link.classList.add('hidden');
+      link.style.display = 'none';
+      hint.classList.remove('hidden');
+    }
     document.querySelector('.right-panel').scrollTop = 0;
   }
 </script>

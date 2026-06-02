@@ -5,6 +5,7 @@
 import { randomBytes } from 'crypto';
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
+import { toBusinessInsertRow } from '../lib/business-insert';
 import { supabase } from '../lib/supabase';
 import type { BusinessHours, CallMode, OnboardingPlan, SetupType } from '../lib/supabase';
 import { normalizePhone } from '../lib/phone';
@@ -147,30 +148,32 @@ export async function createBusinessWithNumber(
 
   const { data: business, error } = await supabase
     .from('businesses')
-    .insert({
-      email,
-      business_name,
-      owner_phone,
-      existing_number,
-      juvo_number: provisioned.phoneNumber,
-      industry,
-      setup_type,
-      plan_status: 'active',
-      preferred_area_code,
-      stripe_customer_id: stripeCustomerId,
-      stripe_checkout_session_id: stripeCheckoutSessionId ?? null,
-      ...(ownerSmsConsent === false
-        ? {
-            owner_new_lead_alerts_enabled: false,
-            owner_customer_reply_alerts_enabled: false,
-          }
-        : ownerSmsConsent === true
+    .insert(
+      toBusinessInsertRow({
+        email,
+        business_name,
+        owner_phone,
+        existing_number,
+        juvo_number: provisioned.phoneNumber,
+        industry,
+        setup_type,
+        plan_status: 'active',
+        preferred_area_code,
+        stripe_customer_id: stripeCustomerId,
+        stripe_checkout_session_id: stripeCheckoutSessionId ?? null,
+        ...(ownerSmsConsent === false
           ? {
-              owner_new_lead_alerts_enabled: true,
-              owner_customer_reply_alerts_enabled: true,
+              owner_new_lead_alerts_enabled: false,
+              owner_customer_reply_alerts_enabled: false,
             }
-          : {}),
-    })
+          : ownerSmsConsent === true
+            ? {
+                owner_new_lead_alerts_enabled: true,
+                owner_customer_reply_alerts_enabled: true,
+              }
+            : {}),
+      })
+    )
     .select('id, juvo_number')
     .single();
 
@@ -541,6 +544,8 @@ async function provisionSignupPasswordLink(
     console.log('[onboarding] signup generateLink ok', {
       userId: extractUserIdFromLinkData(data),
       hasActionLink: Boolean(setPasswordUrl),
+      redirectTo,
+      actionLinkHost: setPasswordUrl ? new URL(setPasswordUrl).host : null,
     });
     return {
       userId: extractUserIdFromLinkData(data),
@@ -754,40 +759,56 @@ export async function handleOnboardingSubscribe(req: Request, res: Response): Pr
     const setup_type = callModeToSetupType(callMode);
 
     try {
-      const { error: insertErr } = await supabase.from('businesses').insert({
-        email,
-        user_id: userId,
-        business_name,
-        first_name,
-        owner_phone,
-        existing_number,
-        juvo_number: provisionedPhone,
-        industry,
-        call_mode: callMode,
-        business_hours,
-        sms_opt_in,
-        setup_type,
-        plan_status: 'active',
-        preferred_area_code,
-        retell_agent_id: agentId,
-        stripe_customer_id: customer.id,
-        stripe_subscription_id: subscription.id,
-        ...(sms_opt_in
-          ? {
-              owner_new_lead_alerts_enabled: true,
-              owner_customer_reply_alerts_enabled: true,
-            }
-          : {
-              owner_new_lead_alerts_enabled: false,
-              owner_customer_reply_alerts_enabled: false,
-            }),
-      });
+      const { error: insertErr } = await supabase.from('businesses').insert(
+        toBusinessInsertRow({
+          email,
+          user_id: userId,
+          business_name,
+          first_name,
+          owner_phone,
+          existing_number,
+          juvo_number: provisionedPhone,
+          industry,
+          call_mode: callMode,
+          business_hours,
+          sms_opt_in,
+          setup_type,
+          plan_status: 'active',
+          preferred_area_code,
+          retell_agent_id: agentId,
+          stripe_customer_id: customer.id,
+          stripe_subscription_id: subscription.id,
+          ...(sms_opt_in
+            ? {
+                owner_new_lead_alerts_enabled: true,
+                owner_customer_reply_alerts_enabled: true,
+              }
+            : {
+                owner_new_lead_alerts_enabled: false,
+                owner_customer_reply_alerts_enabled: false,
+              }),
+        })
+      );
 
       if (insertErr) {
         console.error('[onboarding] subscribe business insert failed', insertErr);
+        res.status(500).json({
+          success: false,
+          error: 'Payment succeeded but account setup failed. Our team will follow up shortly.',
+          stripe_customer_id: customer.id,
+          stripe_subscription_id: subscription.id,
+        });
+        return;
       }
     } catch (dbErr) {
       console.error('[onboarding] subscribe business insert threw', dbErr);
+      res.status(500).json({
+        success: false,
+        error: 'Payment succeeded but account setup failed. Our team will follow up shortly.',
+        stripe_customer_id: customer.id,
+        stripe_subscription_id: subscription.id,
+      });
+      return;
     }
 
     try {
@@ -807,6 +828,7 @@ export async function handleOnboardingSubscribe(req: Request, res: Response): Pr
     res.status(200).json({
       success: true,
       phone_number: provisionedPhone,
+      set_password_url: setPasswordUrl,
     });
   } catch (err) {
     console.error('[onboarding] subscribe error', err);
