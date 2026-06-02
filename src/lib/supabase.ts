@@ -47,9 +47,7 @@ export interface BusinessRow {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   stripe_checkout_session_id: string | null;
-  preferred_area_code: string | null;
   owner_new_lead_alerts_enabled: boolean;
-  owner_customer_reply_alerts_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

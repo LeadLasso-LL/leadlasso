@@ -158,19 +158,12 @@ export async function createBusinessWithNumber(
         industry,
         setup_type,
         plan_status: 'active',
-        preferred_area_code,
         stripe_customer_id: stripeCustomerId,
         stripe_checkout_session_id: stripeCheckoutSessionId ?? null,
         ...(ownerSmsConsent === false
-          ? {
-              owner_new_lead_alerts_enabled: false,
-              owner_customer_reply_alerts_enabled: false,
-            }
+          ? { owner_new_lead_alerts_enabled: false }
           : ownerSmsConsent === true
-            ? {
-                owner_new_lead_alerts_enabled: true,
-                owner_customer_reply_alerts_enabled: true,
-              }
+            ? { owner_new_lead_alerts_enabled: true }
             : {}),
       })
     )
@@ -774,19 +767,10 @@ export async function handleOnboardingSubscribe(req: Request, res: Response): Pr
           sms_opt_in,
           setup_type,
           plan_status: 'active',
-          preferred_area_code,
           retell_agent_id: agentId,
           stripe_customer_id: customer.id,
           stripe_subscription_id: subscription.id,
-          ...(sms_opt_in
-            ? {
-                owner_new_lead_alerts_enabled: true,
-                owner_customer_reply_alerts_enabled: true,
-              }
-            : {
-                owner_new_lead_alerts_enabled: false,
-                owner_customer_reply_alerts_enabled: false,
-              }),
+          owner_new_lead_alerts_enabled: sms_opt_in,
         })
       );
 
